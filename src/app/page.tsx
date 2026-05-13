@@ -162,7 +162,7 @@ export default function HomePage() {
                   </button>
                   <button className="inline-flex flex-1 items-center justify-center gap-1 rounded-[10px] bg-[#4d90d0] px-1.5 py-1.5 text-[8px] font-bold uppercase tracking-wider text-white transition-all hover:bg-[#3d7ab5] active:scale-95 sm:flex-none sm:gap-1.5 sm:px-3 sm:py-2 sm:text-[11px]">
                     <Sparkles className="h-3 w-3 flex-shrink-0 sm:h-3.5 sm:w-3.5" />
-                    <span className="truncate">REKOMENDASI</span>
+                    <span className="truncate">REKOMENDASI AI</span>
                   </button>
                   <button className="inline-flex flex-1 items-center justify-center gap-1 rounded-[10px] bg-[#16b7b2] px-1.5 py-1.5 text-[8px] font-bold uppercase tracking-wider text-white transition-all hover:bg-[#109d97] active:scale-95 sm:flex-none sm:gap-1.5 sm:px-3 sm:py-2 sm:text-[11px]">
                     <Download className="h-3 w-3 flex-shrink-0 sm:h-3.5 sm:w-3.5" />
