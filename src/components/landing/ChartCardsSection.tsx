@@ -134,7 +134,7 @@ function Legend({
           onMouseEnter={() => onHover?.(i)}
           onMouseLeave={() => onHover?.(null)}
           onClick={() => onClick?.(activeIndex === i ? null : i)}
-          className={`flex items-center gap-1.5 text-[10.5px] transition-all duration-200 ${
+          className={`flex items-center gap-1.5 text-[12px] transition-all duration-200 ${
             activeIndex != null && activeIndex !== i ? 'opacity-30' : 'opacity-100'
           }`}
         >
@@ -268,17 +268,17 @@ function DliStatusCard() {
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           {centerLabel ? (
             <>
-              <span className="text-[22px] font-bold text-[#0f8f96] leading-none">
+              <span className="text-[26px] font-bold text-[#0f8f96] leading-none">
                 {centerLabel.value}
               </span>
-              <span className="text-[10px] text-[#7a9a9a] mt-1 text-center max-w-[80px] leading-tight">
+              <span className="text-[12px] text-[#7a9a9a] mt-1 text-center max-w-[80px] leading-tight">
                 {centerLabel.label}
               </span>
             </>
           ) : (
             <>
-              <span className="text-[11px] text-[#aac5c5] font-medium">Total</span>
-              <span className="text-[20px] font-bold text-[#1a2e2e]">100%</span>
+              <span className="text-[12px] text-[#aac5c5] font-medium">Total</span>
+              <span className="text-[24px] font-bold text-[#1a2e2e]">100%</span>
             </>
           )}
         </div>
@@ -359,7 +359,7 @@ function CapaianProvinsiCard() {
             stacked: true,
             grid: { display: false },
             border: { display: false },
-            ticks: { font: { size: 10 }, color: '#7a9a9a' },
+            ticks: { font: { size: 12 }, color: '#7a9a9a' },
           },
           y: {
             stacked: true,
@@ -368,7 +368,7 @@ function CapaianProvinsiCard() {
             border: { display: false },
             ticks: {
               callback: (v: unknown) => `${v}%`,
-              font: { size: 10 },
+              font: { size: 12 },
               color: '#7a9a9a',
               stepSize: 20,
             },
@@ -448,12 +448,12 @@ function TopGapAlatCard() {
           x: {
             grid: { color: 'rgba(0,0,0,0.04)' },
             border: { display: false },
-            ticks: { font: { size: 10 }, color: '#7a9a9a' },
+            ticks: { font: { size: 12 }, color: '#7a9a9a' },
           },
           y: {
             grid: { display: false },
             border: { display: false },
-            ticks: { font: { size: 10 }, color: '#4a6a6a' },
+            ticks: { font: { size: 12 }, color: '#4a6a6a' },
           },
         },
       },
