@@ -4,7 +4,8 @@ import { useState, useRef, useEffect, type ComponentType } from 'react'
 import Link from 'next/link'
 import { Building2, HeartPulse, Stethoscope } from 'lucide-react'
 
-type FacilityKey = 'rumahSakit' | 'puskesmas' | 'posyandu'
+export type FacilityKey = 'rumahSakit' | 'puskesmas' | 'posyandu'
+type FacilityFocus = FacilityKey | 'all'
 
 type ProvinceRow = {
   name: string
@@ -44,8 +45,14 @@ type TooltipState = {
   pct: number
 }
 
-export default function FacilityProvinceSection() {
-  const [activeKeys, setActiveKeys] = useState<Set<FacilityKey>>(new Set(FACILITY_KEYS))
+export default function FacilityProvinceSection({
+  activeFacility = 'all',
+}: {
+  activeFacility?: FacilityFocus
+}) {
+  const [activeKeys, setActiveKeys] = useState<Set<FacilityKey>>(() =>
+    activeFacility === 'all' ? new Set(FACILITY_KEYS) : new Set([activeFacility])
+  )
   const [tooltip, setTooltip] = useState<TooltipState>({
     visible: false, x: 0, y: 0, province: '', key: 'rumahSakit', value: 0, pct: 0,
   })
@@ -189,6 +196,7 @@ export default function FacilityProvinceSection() {
               <p className="mt-1 text-[13px] leading-relaxed text-[#4b4b4b] sm:text-[14px]">
                Menampilkan pemetaan distribusi dan jumlah fasilitas kesehatan yang tersebar di setiap provinsi.
               </p>
+
             </div>
 
             <div className="flex flex-wrap items-center gap-2 lg:pt-1">

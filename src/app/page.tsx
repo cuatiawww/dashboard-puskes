@@ -1,10 +1,12 @@
+'use client'
+
+import { useState } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
-import { Building2, ChevronUp, HeartPulse, Lightbulb, Stethoscope } from 'lucide-react'
+import { Building2, ChevronUp, HeartPulse, Stethoscope } from 'lucide-react'
 import IndonesiaStatusMapClient from '@/components/landing/IndonesiaStatusMapClient'
 import FilterDropdownBar from '@/components/landing/FilterDropdownBar'
 import ChartCardsSection from '@/components/landing/ChartCardsSection'
-import FacilityProvinceSection from '@/components/landing/FacilityProvinceSection'
+import FacilityProvinceSection, { type FacilityKey } from '@/components/landing/FacilityProvinceSection'
 
 const assets = {
   logo: '/Logo-Kemenkes.png',
@@ -13,19 +15,19 @@ const assets = {
 }
 
 const summaryCards = [
-  { id: 'total-faskes', title: 'TOTAL FASILITAS KESEHATAN', value: '10.123' },
-  { id: 'total-rs', title: 'TOTAL RUMAH SAKIT', value: '3.123' },
-  { id: 'total-puskesmas', title: 'TOTAL PUSKESMAS', value: '5.123' },
-  { id: 'total-posyandu', title: 'TOTAL POSYANDU', value: '2.123' },
-]
+  { id: 'total-faskes', facility: 'all', title: 'TOTAL FASILITAS KESEHATAN', value: '10.123', icon: '/faskes.svg' },
+  { id: 'total-rs', facility: 'rumahSakit', title: 'TOTAL RUMAH SAKIT', value: '3.123', icon: '/rumah%20sakit.svg' },
+  { id: 'total-puskesmas', facility: 'puskesmas', title: 'TOTAL PUSKESMAS', value: '5.123', icon: '/puskesmas.svg' },
+  { id: 'total-posyandu', facility: 'posyandu', title: 'TOTAL POSYANDU', value: '2.123', icon: '/posyandu.svg' },
+] as const
 
 export default function HomePage() {
+  const [activeFacility, setActiveFacility] = useState<FacilityKey>('puskesmas')
   const quickLinks = [
-    { label: 'RUMAH SAKIT', href: '#', icon: Building2 },
-    { label: 'PUSKESMAS', href: '#', icon: Stethoscope, active: true },
-    { label: 'POSYANDU', href: '#', icon: HeartPulse },
+    { key: 'rumahSakit' as const, label: 'RUMAH SAKIT', icon: Building2 },
+    { key: 'puskesmas' as const, label: 'PUSKESMAS', icon: Stethoscope },
+    { key: 'posyandu' as const, label: 'POSYANDU', icon: HeartPulse },
   ]
-
   return (
     <div className="min-h-screen bg-[#fbffff] text-slate-800">
       <section className="w-full">
@@ -59,24 +61,25 @@ export default function HomePage() {
 
             <div className="flex flex-wrap items-center gap-2 lg:justify-end">
               {quickLinks.map((item) => (
-                <Link
+                <button
                   key={item.label}
-                  href={item.href}
+                  type="button"
+                  onClick={() => setActiveFacility(item.key)}
                   className={`inline-flex items-center gap-3 rounded-[18px] px-4 py-2.5 text-[11px] font-bold tracking-[0.12em] uppercase transition-all sm:px-5 ${
-                    item.active
+                    item.key === activeFacility
                       ? 'border border-[#10b9b4] bg-[#1dc7bf] text-white shadow-[0_12px_26px_rgba(29,199,191,0.28)]'
                       : 'border border-[#d5eceb] bg-white/90 text-[#3f5a5a] hover:-translate-y-0.5 hover:border-[#9fdedb] hover:bg-[#f7fcfc] hover:text-[#0f8f96]'
                   }`}
                 >
                   <span
                     className={`flex h-7 w-7 items-center justify-center rounded-full ${
-                      item.active ? 'bg-white/20' : 'bg-[#eef7f7]'
+                      item.key === activeFacility ? 'bg-white/20' : 'bg-[#eef7f7]'
                     }`}
                   >
                     <item.icon className="h-4 w-4" />
                   </span>
                   {item.label}
-                </Link>
+                </button>
               ))}
             </div>
           </div>
@@ -88,10 +91,11 @@ export default function HomePage() {
           <FilterDropdownBar />
 
           <div className="mt-2.5 grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
-            {summaryCards.map((card) => (
+            {summaryCards.map((card) => {
+              return (
               <article
                 key={card.id}
-                className="flex min-h-[118px] w-full items-center gap-3 border border-[#bedbda] bg-white px-4 py-3 shadow-[0_6px_18px_rgba(20,120,116,0.06)] sm:px-5 sm:py-3.5"
+                className="flex min-h-[118px] w-full items-center gap-3 border border-[#bedbda] bg-white px-4 py-3 shadow-[0_6px_18px_rgba(20,120,116,0.06)] transition-all sm:px-5 sm:py-3.5"
                 style={{
                   borderTopLeftRadius: '17px',
                   borderTopRightRadius: '17px',
@@ -100,7 +104,7 @@ export default function HomePage() {
                 }}
               >
                 <div className="flex h-[58px] w-[58px] flex-shrink-0 items-center justify-center rounded-full bg-[#e8efef]">
-                  <Image src="/card/psc.svg" alt="" width={44} height={44} className="h-11 w-11" />
+                  <Image src={card.icon} alt={card.title} width={44} height={44} className="h-11 w-11" />
                 </div>
                 <div>
                   <p className="text-[13px] font-bold leading-none text-[#4f4f4f]">{card.title}</p>
@@ -116,7 +120,8 @@ export default function HomePage() {
                   </p>
                 </div>
               </article>
-            ))}
+              )
+            })}
           </div>
         </div>
       </section>
@@ -141,7 +146,7 @@ export default function HomePage() {
               <div className="relative z-10 flex h-full flex-col">
                 <div className="flex items-start gap-3">
                   <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-[#0f8f96] text-white">
-                    <Lightbulb className="h-5 w-5" />
+                    <Image src="/insight.svg" alt="Insight" width={22} height={22} className="h-[22px] w-[22px]" />
                   </span>
                   <h3 className="text-[18px] font-bold leading-[1.25] text-[#2f3a3a]">
                     Analisis Penilaian Indikator Kinerja Fasilitas Kesehatan
@@ -207,7 +212,7 @@ export default function HomePage() {
 
       {/* ── Chart Cards Section ─────────────────────────────────────────────── */}
       <ChartCardsSection />
-      <FacilityProvinceSection />
+      <FacilityProvinceSection key={activeFacility} activeFacility={activeFacility} />
 
     </div>
   )

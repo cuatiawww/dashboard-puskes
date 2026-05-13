@@ -115,11 +115,7 @@ export default function IndonesiaStatusMapClient() {
     })
 
     map.on('singleclick', (evt) => {
-      let clickedFeature: Feature | null = null
-      map.forEachFeatureAtPixel(evt.pixel, (featureAtPixel) => {
-        clickedFeature = featureAtPixel as Feature
-        return true
-      })
+      const clickedFeature = map.forEachFeatureAtPixel(evt.pixel, (featureAtPixel) => featureAtPixel as Feature) ?? null
       if (!clickedFeature) {
         setSelectedProvince(null)
         return
