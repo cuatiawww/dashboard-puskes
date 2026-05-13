@@ -38,7 +38,7 @@ export default function HomePage() {
           />
           <div className="absolute inset-0 bg-[rgba(245,255,255,0.34)]" />
 
-          <div className="relative flex min-h-[219px] w-full flex-col gap-4 px-4 py-4 sm:gap-5 sm:px-5 sm:py-6 lg:flex-row lg:items-center lg:justify-between lg:px-6 lg:py-7">
+          <div className="relative flex min-h-[219px] w-full flex-row gap-4 px-4 py-4 sm:gap-5 sm:px-5 sm:py-6 lg:items-center lg:justify-between lg:px-6 lg:py-7">
             <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-5">
               <div className="flex h-[70px] w-[190px] flex-shrink-0 items-center justify-start sm:h-[108px] sm:w-[302px]">
                 <Image
