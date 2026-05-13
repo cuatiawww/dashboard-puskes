@@ -38,34 +38,34 @@ export default function HomePage() {
           />
           <div className="absolute inset-0 bg-[rgba(245,255,255,0.34)]" />
 
-          <div className="relative flex min-h-[219px] w-full flex-col gap-5 px-4 py-5 sm:px-5 sm:py-6 lg:flex-row lg:items-center lg:justify-between lg:px-6 lg:py-7">
-            <div className="flex items-center gap-4 sm:gap-5">
-              <div className="flex h-[108px] w-[302px] flex-shrink-0 items-center justify-start">
+          <div className="relative flex min-h-[219px] w-full flex-col gap-4 px-4 py-4 sm:gap-5 sm:px-5 sm:py-6 lg:flex-row lg:items-center lg:justify-between lg:px-6 lg:py-7">
+            <div className="flex items-center gap-3 sm:gap-5">
+              <div className="flex h-[70px] w-[190px] flex-shrink-0 items-center justify-start sm:h-[108px] sm:w-[302px]">
                 <Image
                   src={assets.logo}
                   alt="Logo Kemenkes"
                   width={302}
                   height={108}
-                  className="h-[108px] w-auto"
+                  className="h-[70px] w-auto sm:h-[108px]"
                   priority
                 />
               </div>
 
               <div className="max-w-[529px]">
-                <h1 className="text-[18px] font-bold uppercase leading-[1.6] text-[#008c95] sm:text-[24px] lg:text-[30px] lg:leading-[48px]">
+                <h1 className="text-[14px] font-bold uppercase leading-[1.5] text-[#008c95] sm:text-[24px] lg:text-[30px] lg:leading-[48px]">
                   <span className="block">Dashboard Indikator Penilaian</span>
                   <span className="block">Kinerja Fasilitas Kesehatan</span>
                 </h1>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center lg:justify-end">
               {quickLinks.map((item) => (
                 <button
                   key={item.label}
                   type="button"
                   onClick={() => setActiveFacility(item.key)}
-                  className={`inline-flex items-center gap-3 rounded-[18px] px-4 py-2.5 text-[11px] font-bold tracking-[0.12em] uppercase transition-all sm:px-5 ${
+                  className={`inline-flex items-center justify-center gap-2 rounded-[16px] px-3 py-2 text-[10px] font-bold tracking-[0.09em] uppercase transition-all sm:justify-start sm:gap-3 sm:rounded-[18px] sm:px-5 sm:py-2.5 sm:text-[11px] sm:tracking-[0.12em] ${
                     item.key === activeFacility
                       ? 'border border-[#10b9b4] bg-[#1dc7bf] text-white shadow-[0_12px_26px_rgba(29,199,191,0.28)]'
                       : 'border border-[#d5eceb] bg-white/90 text-[#3f5a5a] hover:-translate-y-0.5 hover:border-[#9fdedb] hover:bg-[#f7fcfc] hover:text-[#0f8f96]'
@@ -107,11 +107,11 @@ export default function HomePage() {
                   <Image src={card.icon} alt={card.title} width={44} height={44} className="h-11 w-11" />
                 </div>
                 <div>
-                  <p className="text-[13px] font-bold leading-none text-[#4f4f4f]">{card.title}</p>
-                  <p className="mt-2 text-[52px] font-bold leading-[0.92] tracking-[-0.02em] text-[#454545]">
+                  <p className="text-[12px] font-bold leading-none text-[#4f4f4f] sm:text-[13px]">{card.title}</p>
+                  <p className="mt-2 text-[42px] font-bold leading-[0.92] tracking-[-0.02em] text-[#454545] sm:text-[52px]">
                     {card.value}
                   </p>
-                  <p className="mt-2.5 text-[13px] text-[#383838]">
+                  <p className="mt-2.5 text-[12px] text-[#383838] sm:text-[13px]">
                     <span className="inline-flex items-center gap-1 font-bold text-[#17b7b2]">
                       <ChevronUp className="h-3.5 w-3.5 stroke-[2.8]" />
                       2,1%
@@ -148,23 +148,23 @@ export default function HomePage() {
                   <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-[#0f8f96] text-white">
                     <Image src="/insight.svg" alt="Insight" width={22} height={22} className="h-[22px] w-[22px]" />
                   </span>
-                  <h3 className="text-[18px] font-bold leading-[1.25] text-[#2f3a3a]">
+                  <h3 className="text-[16px] font-bold leading-[1.25] text-[#2f3a3a] sm:text-[18px]">
                     Analisis Penilaian Indikator Kinerja Fasilitas Kesehatan
                   </h3>
                 </div>
-                <p className="mt-3 text-[16px] leading-relaxed text-[#2f3f3f]">
+                <p className="mt-3 text-[14px] leading-relaxed text-[#2f3f3f] sm:text-[16px]">
                   GAP terbesar nasional berada pada alat kesehatan, layanan anak, dan ketersediaan tenaga gizi di
                   wilayah terpencil.
                 </p>
 
-                <div className="mt-auto flex flex-nowrap items-center gap-2 pt-5">
-                  <button className="whitespace-nowrap rounded-lg bg-[#0f8f96] px-3 py-2 text-[14px] font-semibold text-white">
+                <div className="mt-auto grid grid-cols-1 gap-2 pt-5 sm:flex sm:flex-nowrap sm:items-center">
+                  <button className="whitespace-nowrap rounded-lg bg-[#0f8f96] px-3 py-2 text-[13px] font-semibold text-white sm:text-[14px]">
                     Detail
                   </button>
-                  <button className="whitespace-nowrap rounded-lg bg-[#4d90d0] px-3 py-2 text-[14px] font-semibold text-white">
+                  <button className="whitespace-nowrap rounded-lg bg-[#4d90d0] px-3 py-2 text-[13px] font-semibold text-white sm:text-[14px]">
                     Rekomendasi AI
                   </button>
-                  <button className="whitespace-nowrap rounded-lg bg-[#16b7b2] px-3 py-2 text-[14px] font-semibold text-white">
+                  <button className="whitespace-nowrap rounded-lg bg-[#16b7b2] px-3 py-2 text-[13px] font-semibold text-white sm:text-[14px]">
                     Download
                   </button>
                 </div>
@@ -180,10 +180,10 @@ export default function HomePage() {
                 borderBottomLeftRadius: '17px',
               }}
             >
-              <h4 className="text-[22px] font-bold text-[#2f3a3a]">Sumber Data:</h4>
-              <p className="mt-1 text-[16px] text-[#3f4a4a]">Kementerian Kesehatan Republik Indonesia</p>
-              <h4 className="mt-4 text-[22px] font-bold text-[#2f3a3a]">Data per:</h4>
-              <p className="mt-1 text-[16px] text-[#3f4a4a]">11 Mei 2026 10.00 WIB</p>
+              <h4 className="text-[18px] font-bold text-[#2f3a3a] sm:text-[22px]">Sumber Data:</h4>
+              <p className="mt-1 text-[14px] text-[#3f4a4a] sm:text-[16px]">Kementerian Kesehatan Republik Indonesia</p>
+              <h4 className="mt-4 text-[18px] font-bold text-[#2f3a3a] sm:text-[22px]">Data per:</h4>
+              <p className="mt-1 text-[14px] text-[#3f4a4a] sm:text-[16px]">11 Mei 2026 10.00 WIB</p>
             </article>
           </div>
 
@@ -196,10 +196,10 @@ export default function HomePage() {
               borderBottomLeftRadius: '17px',
             }}
           >
-            <h3 className="text-[30px] font-bold leading-tight text-[#2f2f2f]">
+            <h3 className="text-[22px] font-bold leading-tight text-[#2f2f2f] sm:text-[30px]">
               SEBARAN SPASIAL STATUS FASILITAS KESEHATAN NASIONAL
             </h3>
-            <p className="mt-1 text-[16px] leading-relaxed text-[#4b4b4b]">
+            <p className="mt-1 text-[14px] leading-relaxed text-[#4b4b4b] sm:text-[16px]">
               Pemetaan ini menyajikan gambaran komprehensif mengenai distribusi geografis dan klasifikasi status
               Fasilitas Kesehatan di seluruh wilayah Indonesia.
             </p>

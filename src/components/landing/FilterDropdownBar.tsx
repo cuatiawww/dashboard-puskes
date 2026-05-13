@@ -46,9 +46,9 @@ const filterData: FilterItem[] = [
 ]
 
 function FilterIcon({ icon }: { icon: FilterItem['icon'] }) {
-  if (icon === 'globe') return <Globe className="h-6 w-6 text-[#1f1f1f]" />
-  if (icon === 'pin') return <MapPin className="h-6 w-6 text-[#1f1f1f]" />
-  return <MapPinned className="h-6 w-6 text-[#1f1f1f]" />
+  if (icon === 'globe') return <Globe className="h-5 w-5 text-[#1f1f1f] sm:h-6 sm:w-6" />
+  if (icon === 'pin') return <MapPin className="h-5 w-5 text-[#1f1f1f] sm:h-6 sm:w-6" />
+  return <MapPinned className="h-5 w-5 text-[#1f1f1f] sm:h-6 sm:w-6" />
 }
 
 export default function FilterDropdownBar() {
@@ -79,11 +79,11 @@ export default function FilterDropdownBar() {
             <button
               type="button"
               onClick={() => setOpenId(isOpen ? null : filter.id)}
-              className="group flex h-[58px] w-full items-center justify-between rounded-2xl border border-[#b9dedd] bg-white px-4 transition-all hover:border-[#17b7b2] hover:shadow-[0_8px_20px_rgba(23,183,178,0.16)] focus:outline-none focus:ring-2 focus:ring-[#75d7d4]"
+              className="group flex h-[52px] w-full items-center justify-between rounded-2xl border border-[#b9dedd] bg-white px-3.5 transition-all hover:border-[#17b7b2] hover:shadow-[0_8px_20px_rgba(23,183,178,0.16)] focus:outline-none focus:ring-2 focus:ring-[#75d7d4] sm:h-[58px] sm:px-4"
             >
               <span className="flex items-center gap-3">
                 <FilterIcon icon={filter.icon} />
-                <span className="text-[18px] font-medium leading-none text-[#2f2f2f]">{activeOption.label}</span>
+                <span className="text-[14px] font-medium leading-none text-[#2f2f2f] sm:text-[18px]">{activeOption.label}</span>
               </span>
               <ChevronDown
                 className={`h-5 w-5 text-[#10b9b4] transition-transform ${isOpen ? 'rotate-180' : ''}`}
@@ -91,7 +91,7 @@ export default function FilterDropdownBar() {
             </button>
 
             {isOpen && (
-              <div className="absolute left-0 top-[62px] z-30 w-full overflow-hidden rounded-2xl border border-[#b9dedd] bg-white shadow-[0_16px_30px_rgba(8,110,110,0.2)]">
+              <div className="absolute left-0 top-[56px] z-30 w-full overflow-hidden rounded-2xl border border-[#b9dedd] bg-white shadow-[0_16px_30px_rgba(8,110,110,0.2)] sm:top-[62px]">
                 {filter.options.map((opt) => {
                   const isSelected = opt.value === activeValue
                   return (
@@ -102,7 +102,7 @@ export default function FilterDropdownBar() {
                         setSelected((prev) => ({ ...prev, [filter.id]: opt.value }))
                         setOpenId(null)
                       }}
-                      className={`block w-full px-4 py-2.5 text-left text-[16px] leading-none transition-colors ${
+                      className={`block w-full px-4 py-2.5 text-left text-[14px] leading-none transition-colors sm:text-[16px] ${
                         isSelected
                           ? 'bg-[#0b6ad4] text-white'
                           : 'text-[#2f2f2f] hover:bg-[#e8f8f7] hover:text-[#0d8f8a]'
