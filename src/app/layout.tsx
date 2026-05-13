@@ -11,8 +11,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Dashboard Kesehatan - Kemenkes RI",
-  description: "Sistem Informasi Kesehatan Kementerian Kesehatan Republik Indonesia",
+  title: "Dashboard Puskes - Kemenkes RI",
+  description: "Dashboard Puskes untuk pemantauan data kesehatan Kementerian Kesehatan Republik Indonesia",
 };
 
 export default function RootLayout({
