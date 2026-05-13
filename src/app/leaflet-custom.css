@@ -61,11 +61,14 @@
   font-family: inherit;
   z-index: 1 !important;
   position: relative;
+  background: #f2ffff;
 }
 
 /* Fix z-index untuk control zoom */
 .leaflet-control-zoom {
   z-index: 500 !important;
+  border: 1px solid #d1eceb !important;
+  box-shadow: 0 8px 18px rgba(14, 119, 117, 0.08) !important;
 }
 
 /* Fix z-index untuk popup */
@@ -76,6 +79,10 @@
 /* Fix for marker icons */
 .leaflet-default-icon-path {
   background-image: url('https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png');
+}
+
+.leaflet-tile-pane {
+  filter: saturate(1.15) contrast(1.02);
 }
 
 /* Province Tooltip */

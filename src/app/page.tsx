@@ -1,71 +1,80 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { Building2, ChevronUp, HeartPulse, Lightbulb, Stethoscope } from 'lucide-react'
+import IndonesiaStatusMapClient from '@/components/landing/IndonesiaStatusMapClient'
+import FilterDropdownBar from '@/components/landing/FilterDropdownBar'
+import ChartCardsSection from '@/components/landing/ChartCardsSection'
+import FacilityProvinceSection from '@/components/landing/FacilityProvinceSection'
 
 const assets = {
   logo: '/Logo-Kemenkes.png',
-  headerBackground: '/BG.png',
+  headerBackground: '/bg header.png',
+  insightBackground: '/bg insght.png',
 }
+
+const summaryCards = [
+  { id: 'total-faskes', title: 'TOTAL FASILITAS KESEHATAN', value: '10.123' },
+  { id: 'total-rs', title: 'TOTAL RUMAH SAKIT', value: '3.123' },
+  { id: 'total-puskesmas', title: 'TOTAL PUSKESMAS', value: '5.123' },
+  { id: 'total-posyandu', title: 'TOTAL POSYANDU', value: '2.123' },
+]
 
 export default function HomePage() {
   const quickLinks = [
-    { label: 'Rumah Sakit', href: '#' },
-    { label: 'Puskesmas', href: '#', active: true },
-    { label: 'Posyandu', href: '#' },
+    { label: 'RUMAH SAKIT', href: '#', icon: Building2 },
+    { label: 'PUSKESMAS', href: '#', icon: Stethoscope, active: true },
+    { label: 'POSYANDU', href: '#', icon: HeartPulse },
   ]
 
   return (
-    <div className="min-h-screen bg-[#f3fbfb] text-slate-800">
+    <div className="min-h-screen bg-[#fbffff] text-slate-800">
       <section className="w-full">
-        <div className="relative overflow-hidden border-y border-[#d5efef] bg-[#eef9f8]">
+        <div className="relative overflow-hidden border-y border-[#cfeeed] bg-[#eefdfd]">
           <div
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
             style={{ backgroundImage: `url('${assets.headerBackground}')` }}
           />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.9),_rgba(238,249,248,0.75)_42%,_rgba(224,244,243,0.95)_100%)]" />
-          <div className="absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,rgba(186,226,224,0)_0%,rgba(186,226,224,0.68)_100%)]" />
-          <div className="absolute left-10 top-5 h-28 w-28 rounded-full bg-white/35 blur-2xl" />
-          <div className="absolute right-20 top-3 h-32 w-32 rounded-full bg-[#bdeeed]/55 blur-2xl" />
-          <div className="pointer-events-none absolute inset-0 opacity-50">
-            <div className="absolute left-[24%] top-7 h-12 w-20 rounded-xl border border-[#d7eceb]" />
-            <div className="absolute left-[41%] top-8 h-16 w-24 rounded-2xl border border-[#d7eceb]" />
-            <div className="absolute right-[27%] top-5 h-12 w-16 rounded-full border border-[#d7eceb]" />
-            <div className="absolute right-[12%] top-4 h-16 w-20 rotate-[-24deg] rounded-[30px] border border-[#d7eceb]" />
-            <div className="absolute bottom-0 left-[8%] h-16 w-28 rounded-t-[60px] border border-b-0 border-[#d7eceb]" />
-            <div className="absolute bottom-0 left-[35%] h-14 w-36 rounded-t-[70px] border border-b-0 border-[#d7eceb]" />
-            <div className="absolute bottom-0 right-[10%] h-16 w-28 rounded-t-[60px] border border-b-0 border-[#d7eceb]" />
-          </div>
+          <div className="absolute inset-0 bg-[rgba(245,255,255,0.34)]" />
 
-          <div className="mx-auto flex min-h-[219px] w-full max-w-[1440px] flex-col gap-8 px-4 py-7 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-10 lg:py-9">
-            <div className="flex items-center gap-5">
-              <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center sm:h-20 sm:w-20">
+          <div className="relative flex min-h-[219px] w-full flex-col gap-5 px-4 py-5 sm:px-5 sm:py-6 lg:flex-row lg:items-center lg:justify-between lg:px-6 lg:py-7">
+            <div className="flex items-center gap-4 sm:gap-5">
+              <div className="flex h-[108px] w-[302px] flex-shrink-0 items-center justify-start">
                 <Image
                   src={assets.logo}
                   alt="Logo Kemenkes"
-                  width={64}
-                  height={64}
-                  className="h-12 w-auto sm:h-14"
+                  width={302}
+                  height={108}
+                  className="h-[108px] w-auto"
                   priority
                 />
               </div>
 
-              <div className="max-w-[620px]">
-                <h1 className="mt-2 text-lg font-bold uppercase leading-snug text-[#008c95] sm:text-2xl lg:text-[34px]">
-                  Dashboard Indikator Penilaian Kinerja Fasilitas Kesehatan
+              <div className="max-w-[529px]">
+                <h1 className="text-[18px] font-bold uppercase leading-[1.6] text-[#008c95] sm:text-[24px] lg:text-[30px] lg:leading-[48px]">
+                  <span className="block">Dashboard Indikator Penilaian</span>
+                  <span className="block">Kinerja Fasilitas Kesehatan</span>
                 </h1>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
               {quickLinks.map((item) => (
                 <Link
                   key={item.label}
                   href={item.href}
-                  className={`rounded-2xl px-5 py-3 text-sm font-semibold transition-all sm:px-6 ${
+                  className={`inline-flex items-center gap-3 rounded-[18px] px-4 py-2.5 text-[11px] font-bold tracking-[0.12em] uppercase transition-all sm:px-5 ${
                     item.active
-                      ? 'bg-[#1dc7bf] text-white shadow-[0_12px_30px_rgba(29,199,191,0.35)]'
-                      : 'border border-[#e5efef] bg-white/90 text-slate-600 hover:border-[#bfe7e5] hover:text-[#008c95]'
+                      ? 'border border-[#10b9b4] bg-[#1dc7bf] text-white shadow-[0_12px_26px_rgba(29,199,191,0.28)]'
+                      : 'border border-[#d5eceb] bg-white/90 text-[#3f5a5a] hover:-translate-y-0.5 hover:border-[#9fdedb] hover:bg-[#f7fcfc] hover:text-[#0f8f96]'
                   }`}
                 >
+                  <span
+                    className={`flex h-7 w-7 items-center justify-center rounded-full ${
+                      item.active ? 'bg-white/20' : 'bg-[#eef7f7]'
+                    }`}
+                  >
+                    <item.icon className="h-4 w-4" />
+                  </span>
                   {item.label}
                 </Link>
               ))}
@@ -73,6 +82,133 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <section className="w-full bg-[#fbffff] py-3">
+        <div className="w-full px-4 sm:px-5 lg:px-6">
+          <FilterDropdownBar />
+
+          <div className="mt-2.5 grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+            {summaryCards.map((card) => (
+              <article
+                key={card.id}
+                className="flex min-h-[118px] w-full items-center gap-3 border border-[#bedbda] bg-white px-4 py-3 shadow-[0_6px_18px_rgba(20,120,116,0.06)] sm:px-5 sm:py-3.5"
+                style={{
+                  borderTopLeftRadius: '17px',
+                  borderTopRightRadius: '17px',
+                  borderBottomRightRadius: '22px',
+                  borderBottomLeftRadius: '17px',
+                }}
+              >
+                <div className="flex h-[58px] w-[58px] flex-shrink-0 items-center justify-center rounded-full bg-[#e8efef]">
+                  <Image src="/card/psc.svg" alt="" width={44} height={44} className="h-11 w-11" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-bold leading-none text-[#4f4f4f]">{card.title}</p>
+                  <p className="mt-2 text-[52px] font-bold leading-[0.92] tracking-[-0.02em] text-[#454545]">
+                    {card.value}
+                  </p>
+                  <p className="mt-2.5 text-[13px] text-[#383838]">
+                    <span className="inline-flex items-center gap-1 font-bold text-[#17b7b2]">
+                      <ChevronUp className="h-3.5 w-3.5 stroke-[2.8]" />
+                      2,1%
+                    </span>{' '}
+                    dari bulan sebelumnya
+                  </p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="w-full bg-[#fbffff] pb-5">
+        <div className="grid w-full grid-cols-1 gap-4 px-4 sm:px-5 lg:px-6 xl:grid-cols-[381px_minmax(0,1fr)] xl:items-start">
+          <div className="space-y-3">
+            <article
+              className="relative overflow-hidden border border-[#b7d9d8] p-4 xl:h-[415px] xl:w-[381px]"
+              style={{
+                backgroundImage: `url('${assets.insightBackground}')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center bottom',
+                backgroundRepeat: 'no-repeat',
+                borderTopLeftRadius: '17px',
+                borderTopRightRadius: '17px',
+                borderBottomRightRadius: '22px',
+                borderBottomLeftRadius: '17px',
+              }}
+            >
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(237,251,250,0.68)_0%,rgba(231,247,246,0.56)_100%)]" />
+              <div className="relative z-10 flex h-full flex-col">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-[#0f8f96] text-white">
+                    <Lightbulb className="h-5 w-5" />
+                  </span>
+                  <h3 className="text-[18px] font-bold leading-[1.25] text-[#2f3a3a]">
+                    Analisis Penilaian Indikator Kinerja Fasilitas Kesehatan
+                  </h3>
+                </div>
+                <p className="mt-3 text-[16px] leading-relaxed text-[#2f3f3f]">
+                  GAP terbesar nasional berada pada alat kesehatan, layanan anak, dan ketersediaan tenaga gizi di
+                  wilayah terpencil.
+                </p>
+
+                <div className="mt-auto flex flex-nowrap items-center gap-2 pt-5">
+                  <button className="whitespace-nowrap rounded-lg bg-[#0f8f96] px-3 py-2 text-[14px] font-semibold text-white">
+                    Detail
+                  </button>
+                  <button className="whitespace-nowrap rounded-lg bg-[#4d90d0] px-3 py-2 text-[14px] font-semibold text-white">
+                    Rekomendasi AI
+                  </button>
+                  <button className="whitespace-nowrap rounded-lg bg-[#16b7b2] px-3 py-2 text-[14px] font-semibold text-white">
+                    Download
+                  </button>
+                </div>
+              </div>
+            </article>
+
+            <article
+              className="border border-[#b7c8c9] bg-[#e9f1f2] p-4 xl:h-[183px] xl:w-[381px]"
+              style={{
+                borderTopLeftRadius: '17px',
+                borderTopRightRadius: '17px',
+                borderBottomRightRadius: '22px',
+                borderBottomLeftRadius: '17px',
+              }}
+            >
+              <h4 className="text-[22px] font-bold text-[#2f3a3a]">Sumber Data:</h4>
+              <p className="mt-1 text-[16px] text-[#3f4a4a]">Kementerian Kesehatan Republik Indonesia</p>
+              <h4 className="mt-4 text-[22px] font-bold text-[#2f3a3a]">Data per:</h4>
+              <p className="mt-1 text-[16px] text-[#3f4a4a]">11 Mei 2026 10.00 WIB</p>
+            </article>
+          </div>
+
+          <article
+            className="border border-[#cdcdcd] bg-white p-4 xl:h-[615px]"
+            style={{
+              borderTopLeftRadius: '17px',
+              borderTopRightRadius: '17px',
+              borderBottomRightRadius: '22px',
+              borderBottomLeftRadius: '17px',
+            }}
+          >
+            <h3 className="text-[30px] font-bold leading-tight text-[#2f2f2f]">
+              SEBARAN SPASIAL STATUS FASILITAS KESEHATAN NASIONAL
+            </h3>
+            <p className="mt-1 text-[16px] leading-relaxed text-[#4b4b4b]">
+              Pemetaan ini menyajikan gambaran komprehensif mengenai distribusi geografis dan klasifikasi status
+              Fasilitas Kesehatan di seluruh wilayah Indonesia.
+            </p>
+            <div className="mt-4 xl:h-[470px]">
+              <IndonesiaStatusMapClient />
+            </div>
+          </article>
+        </div>
+      </section>
+
+      {/* ── Chart Cards Section ─────────────────────────────────────────────── */}
+      <ChartCardsSection />
+      <FacilityProvinceSection />
+
     </div>
   )
 }

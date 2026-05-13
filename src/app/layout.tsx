@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
+import { Roboto } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/layout/AppShell";
 
-const poppins = Poppins({
+const roboto = Roboto({
   weight: ['300', '400', '500', '600', '700', '800'],
   subsets: ["latin"],
-  variable: "--font-poppins",
+  variable: "--font-roboto",
   display: 'swap',
 });
 
@@ -22,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id">
-      <body className={`${poppins.variable} font-poppins antialiased`}>
+      <body className={`${roboto.variable} font-roboto antialiased`}>
         <AppShell>
           {children}
         </AppShell>
