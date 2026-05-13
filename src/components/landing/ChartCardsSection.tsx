@@ -89,10 +89,10 @@ function Card({
               {badge}
             </span>
           )}
-          <h3 className="text-[13px] font-bold tracking-wide text-[#1a2e2e] uppercase leading-tight">
+          <h3 className="text-[16px] sm:text-[18px] font-bold tracking-wide text-[#2f2f2f] uppercase leading-tight">
             {title}
           </h3>
-          <p className="mt-1 text-[11px] text-[#7a9a9a] leading-relaxed">
+          <p className="mt-1 text-[13px] sm:text-[14px] text-[#4b4b4b] leading-relaxed">
             {description}
           </p>
         </div>
