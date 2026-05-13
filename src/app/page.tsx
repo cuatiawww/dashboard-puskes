@@ -39,7 +39,7 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-[rgba(245,255,255,0.34)]" />
 
           <div className="relative flex min-h-[219px] w-full flex-col gap-4 px-4 py-4 sm:gap-5 sm:px-5 sm:py-6 lg:flex-row lg:items-center lg:justify-between lg:px-6 lg:py-7">
-            <div className="flex items-center gap-3 sm:gap-5">
+            <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-5">
               <div className="flex h-[70px] w-[190px] flex-shrink-0 items-center justify-start sm:h-[108px] sm:w-[302px]">
                 <Image
                   src={assets.logo}
@@ -52,14 +52,14 @@ export default function HomePage() {
               </div>
 
               <div className="max-w-[529px]">
-                <h1 className="text-[14px] font-bold uppercase leading-[1.5] text-[#008c95] sm:text-[24px] lg:text-[30px] lg:leading-[48px]">
+                <h1 className="text-[12px] font-bold uppercase leading-[1.45] text-[#008c95] sm:text-[24px] lg:text-[30px] lg:leading-[48px]">
                   <span className="block">Dashboard Indikator Penilaian</span>
                   <span className="block">Kinerja Fasilitas Kesehatan</span>
                 </h1>
               </div>
             </div>
 
-            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center lg:justify-end">
+            <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center lg:justify-end">
               {quickLinks.map((item) => (
                 <button
                   key={item.label}

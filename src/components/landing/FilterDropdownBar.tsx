@@ -104,7 +104,7 @@ export default function FilterDropdownBar() {
                       }}
                       className={`block w-full px-4 py-2.5 text-left text-[14px] leading-none transition-colors sm:text-[16px] ${
                         isSelected
-                          ? 'bg-[#0b6ad4] text-white'
+                          ? 'bg-[#e8f8f7] text-[#0d8f8a]'
                           : 'text-[#2f2f2f] hover:bg-[#e8f8f7] hover:text-[#0d8f8a]'
                       }`}
                     >
