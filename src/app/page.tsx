@@ -145,9 +145,7 @@ export default function HomePage() {
               <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(237,251,250,0.68)_0%,rgba(231,247,246,0.56)_100%)]" />
               <div className="relative z-10 flex h-full flex-col">
                 <div className="flex items-start gap-3">
-                  <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-[#0f8f96] text-white">
-                    <Image src="/insight.svg" alt="Insight" width={22} height={22} className="h-[22px] w-[22px]" />
-                  </span>
+                  <Image src="/insight.svg" alt="Insight" width={56} height={56} className="h-14 w-14 flex-shrink-0" />
                   <h3 className="text-[16px] font-bold leading-[1.25] text-[#2f3a3a] sm:text-[18px]">
                     Analisis Penilaian Indikator Kinerja Fasilitas Kesehatan
                   </h3>
