@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Building2, ChevronUp, HeartPulse, Stethoscope } from 'lucide-react'
+import { Building2, ChevronUp, HeartPulse, Stethoscope, FileText, Sparkles, Download } from 'lucide-react'
 import IndonesiaStatusMapClient from '@/components/landing/IndonesiaStatusMapClient'
 import FilterDropdownBar from '@/components/landing/FilterDropdownBar'
 import ChartCardsSection from '@/components/landing/ChartCardsSection'
@@ -150,20 +150,23 @@ export default function HomePage() {
                     Analisis Penilaian Indikator Kinerja Fasilitas Kesehatan
                   </h3>
                 </div>
-                <p className="mt-3 text-[14px] leading-relaxed text-[#2f3f3f] sm:text-[16px]">
+                <p className="mt-2 text-[13px] leading-relaxed text-[#2f3f3f] sm:mt-3 sm:text-[15px]">
                   GAP terbesar nasional berada pada alat kesehatan, layanan anak, dan ketersediaan tenaga gizi di
                   wilayah terpencil.
                 </p>
 
-                <div className="mt-auto grid grid-cols-1 gap-2 pt-5 sm:flex sm:flex-nowrap sm:items-center">
-                  <button className="whitespace-nowrap rounded-lg bg-[#0f8f96] px-3 py-2 text-[13px] font-semibold text-white sm:text-[14px]">
-                    Detail
+                <div className="mt-auto flex gap-1.5 overflow-hidden pt-4 sm:gap-2 sm:pt-5">
+                  <button className="inline-flex flex-1 items-center justify-center gap-1 rounded-[10px] bg-[#0f8f96] px-1.5 py-1.5 text-[8px] font-bold uppercase tracking-wider text-white transition-all hover:bg-[#0d7a81] active:scale-95 sm:flex-none sm:gap-1.5 sm:px-3 sm:py-2 sm:text-[11px]">
+                    <FileText className="h-3 w-3 flex-shrink-0 sm:h-3.5 sm:w-3.5" />
+                    <span className="truncate">DETAIL</span>
                   </button>
-                  <button className="whitespace-nowrap rounded-lg bg-[#4d90d0] px-3 py-2 text-[13px] font-semibold text-white sm:text-[14px]">
-                    Rekomendasi AI
+                  <button className="inline-flex flex-1 items-center justify-center gap-1 rounded-[10px] bg-[#4d90d0] px-1.5 py-1.5 text-[8px] font-bold uppercase tracking-wider text-white transition-all hover:bg-[#3d7ab5] active:scale-95 sm:flex-none sm:gap-1.5 sm:px-3 sm:py-2 sm:text-[11px]">
+                    <Sparkles className="h-3 w-3 flex-shrink-0 sm:h-3.5 sm:w-3.5" />
+                    <span className="truncate">REKOMENDASI</span>
                   </button>
-                  <button className="whitespace-nowrap rounded-lg bg-[#16b7b2] px-3 py-2 text-[13px] font-semibold text-white sm:text-[14px]">
-                    Download
+                  <button className="inline-flex flex-1 items-center justify-center gap-1 rounded-[10px] bg-[#16b7b2] px-1.5 py-1.5 text-[8px] font-bold uppercase tracking-wider text-white transition-all hover:bg-[#109d97] active:scale-95 sm:flex-none sm:gap-1.5 sm:px-3 sm:py-2 sm:text-[11px]">
+                    <Download className="h-3 w-3 flex-shrink-0 sm:h-3.5 sm:w-3.5" />
+                    <span className="truncate">DOWNLOAD</span>
                   </button>
                 </div>
               </div>
