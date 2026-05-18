@@ -677,7 +677,10 @@ export default function HomePage() {
               Pemetaan ini menyajikan gambaran komprehensif mengenai distribusi geografis dan klasifikasi status Fasilitas Kesehatan di seluruh wilayah Indonesia.
             </p>
             <div className="mt-4 h-[300px] sm:h-[350px] md:h-[420px] xl:h-[470px]">
-              <IndonesiaStatusMapClient />
+              <IndonesiaStatusMapClient
+                selectedProvinsi={selectedProvinsi}
+                selectedKabupaten={selectedKabupaten}
+              />
             </div>
           </article>
         </div>

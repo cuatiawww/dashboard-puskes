@@ -34,38 +34,102 @@ function normalizeProvinceName(value: string) {
     .trim()
 }
 
-const JABODETABEK_PROVINCES = ['DKI JAKARTA', 'JAKARTA', 'D.K.I. JAKARTA', 'DKI. JAKARTA']
+type PetaSebaranItem = {
+  kode?: string
+  nama?: string
+  kode_provinsi?: string
+  nama_provinsi?: string
+  total_rs?: string | number
+  total_puskesmas?: string | number
+  total_posyandu?: string | number
+  total_klinik?: string | number
+  total_pustu?: string | number
+  total_bkk?: string | number
+  total_faskes?: string | number
+  jumlah_penduduk?: string | number
+  jml_penduduk?: string | number
+  penduduk?: string | number
+  populasi?: string | number
+  rasio?: string | number
+  rasio_kepadatan?: string | number
+  rasio_faskes_per_100k?: string | number
+  properties?: PetaSebaranItem
+  features?: PetaSebaranItem[]
+}
+type PetaMetrics = {
+  densityValue: number
+  totalFaskes: number
+  population: number
+}
 
-const HIGH_DENSITY_PROVINCES = [
-  'JAWA BARAT',
-  'BANTEN',
-  'JAWA TIMUR',
-  'JAWA TENGAH',
-  'D.I. YOGYAKARTA',
-  'DI YOGYAKARTA',
-  'YOGYAKARTA',
-]
+function toNumber(value: string | number | undefined) {
+  if (typeof value === 'number') return value
+  const parsed = Number.parseFloat((value ?? '0').toString().replace(',', '.'))
+  return Number.isFinite(parsed) ? parsed : 0
+}
 
-function densityValueForProvinceName(name: string): number {
-  const normalized = normalizeProvinceName(name)
+function calculateTotalFaskes(item: PetaSebaranItem) {
+  return (
+    toNumber(item.total_rs) +
+    toNumber(item.total_puskesmas) +
+    toNumber(item.total_posyandu) +
+    toNumber(item.total_klinik) +
+    toNumber(item.total_pustu) +
+    toNumber(item.total_bkk)
+  )
+}
 
-  if (JABODETABEK_PROVINCES.some((j) => normalized.includes(j))) {
-    return 90
-  }
+function calculateDensityValue(item: PetaSebaranItem) {
+  const source = item.properties ?? item
+  const directRatio = toNumber(
+    source.rasio ?? source.rasio_kepadatan ?? source.rasio_faskes_per_100k,
+  )
+  if (directRatio > 0) return directRatio
 
-  if (HIGH_DENSITY_PROVINCES.some((h) => normalized.includes(normalizeProvinceName(h)))) {
-    let hash = 0
-    for (let i = 0; i < normalized.length; i += 1) {
-      hash = (hash * 31 + normalized.charCodeAt(i)) >>> 0
+  const population =
+    toNumber(
+      source.jumlah_penduduk ??
+        source.jml_penduduk ??
+        source.penduduk ??
+        source.populasi,
+    )
+  if (population <= 0) return 0
+
+  const totalFaskes = calculateTotalFaskes(source)
+  return (totalFaskes / population) * 100000
+}
+
+function extractPetaRows(payloadData: unknown): PetaSebaranItem[] {
+  const visited = new Set<unknown>()
+
+  const walk = (node: unknown): PetaSebaranItem[] => {
+    if (!node || visited.has(node)) return []
+    visited.add(node)
+
+    if (Array.isArray(node)) {
+      return node as PetaSebaranItem[]
     }
-    return 55 + (hash % 19)
+
+    if (typeof node !== 'object') return []
+    const obj = node as Record<string, unknown>
+
+    if (Array.isArray(obj.features)) {
+      return obj.features as PetaSebaranItem[]
+    }
+
+    // Common wrappers from gateways/backend
+    const candidateKeys = ['data', 'result', 'payload', 'response']
+    for (const key of candidateKeys) {
+      if (key in obj) {
+        const rows = walk(obj[key])
+        if (rows.length > 0) return rows
+      }
+    }
+
+    return []
   }
 
-  let hash = 0
-  for (let i = 0; i < normalized.length; i += 1) {
-    hash = (hash * 31 + normalized.charCodeAt(i)) >>> 0
-  }
-  return 18 + (hash % 37)
+  return walk(payloadData)
 }
 
 function levelFromDensity(value: number): DensityLevel {
@@ -75,19 +139,31 @@ function levelFromDensity(value: number): DensityLevel {
   return 'Sangat Tinggi'
 }
 
-export default function IndonesiaStatusMapClient() {
+export default function IndonesiaStatusMapClient({
+  selectedProvinsi = '',
+  selectedKabupaten = '',
+}: {
+  selectedProvinsi?: string
+  selectedKabupaten?: string
+}) {
   const mapRef = useRef<HTMLDivElement | null>(null)
   const mapInstanceRef = useRef<Map | null>(null)
   const provinceLayerRef = useRef<VectorLayer<VectorSource> | null>(null)
   const provinceSourceRef = useRef<VectorSource | null>(null)
   const activeFilterRef = useRef<DensityLevel | null>(null)
   const selectedProvinceNameRef = useRef<string>('')
+  const densityByProvinceNameRef = useRef<Record<string, number>>({})
+  const densityByProvinceCodeRef = useRef<Record<string, number>>({})
+  const metricsByProvinceNameRef = useRef<Record<string, PetaMetrics>>({})
+  const metricsByProvinceCodeRef = useRef<Record<string, PetaMetrics>>({})
   const [activeFilter, setActiveFilter] = useState<DensityLevel | null>(null)
   const [selectedProvince, setSelectedProvince] = useState<{
     name: string
     densityLevel: DensityLevel
     densityValue: number
     kode: string | number
+    totalFaskes: number
+    population: number
   } | null>(null)
 
   useEffect(() => {
@@ -97,6 +173,51 @@ export default function IndonesiaStatusMapClient() {
   useEffect(() => {
     selectedProvinceNameRef.current = selectedProvince?.name || ''
   }, [selectedProvince])
+
+  useEffect(() => {
+    void (async () => {
+      const response = await fetch('/api/dashboard-faskes/peta-sebaran', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kode_provinsi: selectedProvinsi,
+          kode_kabupaten: selectedKabupaten,
+        }),
+      })
+      if (!response.ok) return
+      const payload = (await response.json()) as { data?: unknown }
+      const rows = extractPetaRows(payload.data)
+      const byName: Record<string, number> = {}
+      const byCode: Record<string, number> = {}
+      const metricsByName: Record<string, PetaMetrics> = {}
+      const metricsByCode: Record<string, PetaMetrics> = {}
+      for (const item of rows) {
+        const source = item.properties ?? item
+        const density = calculateDensityValue(item)
+        const totalFaskes = toNumber(source.total_faskes) || calculateTotalFaskes(source)
+        const population = toNumber(
+          source.jumlah_penduduk ?? source.jml_penduduk ?? source.penduduk ?? source.populasi,
+        )
+        const name = normalizeProvinceName(
+          String(source.nama ?? source.nama_provinsi ?? ''),
+        )
+        const code = String(source.kode ?? source.kode_provinsi ?? '').trim()
+        if (name) {
+          byName[name] = density
+          metricsByName[name] = { densityValue: density, totalFaskes, population }
+        }
+        if (code) {
+          byCode[code] = density
+          metricsByCode[code] = { densityValue: density, totalFaskes, population }
+        }
+      }
+      densityByProvinceNameRef.current = byName
+      densityByProvinceCodeRef.current = byCode
+      metricsByProvinceNameRef.current = metricsByName
+      metricsByProvinceCodeRef.current = metricsByCode
+      provinceLayerRef.current?.changed()
+    })()
+  }, [selectedProvinsi, selectedKabupaten])
 
   useEffect(() => {
     if (!mapRef.current) return
@@ -109,11 +230,16 @@ export default function IndonesiaStatusMapClient() {
     const provinceLayer = new VectorLayer({
       source: provinceSource,
       style: (feature: FeatureLike) => {
-        const densityValue = densityValueForProvinceName(String(feature.get('Propinsi') || ''))
+        const name = String(feature.get('Propinsi') || '')
+        const code = String(feature.get('kode') || feature.get('Kode') || '').trim()
+        const densityFromName =
+          densityByProvinceNameRef.current[normalizeProvinceName(name)]
+        const densityFromCode = densityByProvinceCodeRef.current[code]
+        const densityValue = densityFromCode ?? densityFromName ?? 0
         const densityLevel = levelFromDensity(densityValue)
         const selectedName = selectedProvinceNameRef.current
         const isSelected =
-          selectedName !== '' && selectedName === String(feature.get('Propinsi') || '')
+          selectedName !== '' && selectedName === name
         const disabled =
           activeFilterRef.current !== null && densityLevel !== activeFilterRef.current
         return new Style({
@@ -159,10 +285,28 @@ export default function IndonesiaStatusMapClient() {
         return
       }
       const propinsiName = String(clickedFeature.get('Propinsi') || '')
-      const densityValue = densityValueForProvinceName(propinsiName)
+      const code = String(clickedFeature.get('kode') || clickedFeature.get('Kode') || '').trim()
+      const densityValue =
+        densityByProvinceCodeRef.current[code] ??
+        densityByProvinceNameRef.current[normalizeProvinceName(propinsiName)] ??
+        0
+      const metrics =
+        metricsByProvinceCodeRef.current[code] ??
+        metricsByProvinceNameRef.current[normalizeProvinceName(propinsiName)] ?? {
+          densityValue,
+          totalFaskes: 0,
+          population: 0,
+        }
       const densityLevel = levelFromDensity(densityValue)
-      const kode = clickedFeature.get('kode') ?? '-'
-      setSelectedProvince({ name: propinsiName, densityLevel, densityValue, kode })
+      const kode = code || '-'
+      setSelectedProvince({
+        name: propinsiName,
+        densityLevel,
+        densityValue: metrics.densityValue,
+        kode,
+        totalFaskes: metrics.totalFaskes,
+        population: metrics.population,
+      })
       const geometry = clickedFeature.getGeometry()
       if (!geometry) return
       map.getView().fit(geometry.getExtent(), {
@@ -192,10 +336,15 @@ export default function IndonesiaStatusMapClient() {
     const firstMatch = source
       .getFeatures()
       .find(
-        (f) =>
-          levelFromDensity(
-            densityValueForProvinceName(String(f.get('Propinsi') || '')),
-          ) === activeFilter,
+        (f) => {
+          const name = String(f.get('Propinsi') || '')
+          const code = String(f.get('kode') || f.get('Kode') || '').trim()
+          const densityValue =
+            densityByProvinceCodeRef.current[code] ??
+            densityByProvinceNameRef.current[normalizeProvinceName(name)] ??
+            0
+          return levelFromDensity(densityValue) === activeFilter
+        },
       )
     if (!firstMatch || !mapInstanceRef.current) return
     const geometry = firstMatch.getGeometry()
@@ -317,10 +466,29 @@ export default function IndonesiaStatusMapClient() {
               </span>
             </p>
             <p className="mt-1 text-[13px] text-[#4a6060]">
-              Rasio kepadatan:{' '}
+              Rasio faskes (per 100.000 penduduk):{' '}
               <span className="font-semibold text-[#223333]">
-                {selectedProvince.densityValue} faskes / 100.000 penduduk
+                {selectedProvince.densityValue > 0
+                  ? `${selectedProvince.densityValue.toFixed(2)}`
+                  : 'Data rasio tidak tersedia'}
               </span>
+            </p>
+            <p className="mt-1 text-[13px] text-[#4a6060]">
+              Total faskes:{' '}
+              <span className="font-semibold text-[#223333]">
+                {selectedProvince.totalFaskes.toLocaleString('id-ID')}
+              </span>
+            </p>
+            <p className="mt-1 text-[13px] text-[#4a6060]">
+              Jumlah penduduk:{' '}
+              <span className="font-semibold text-[#223333]">
+                {selectedProvince.population > 0
+                  ? selectedProvince.population.toLocaleString('id-ID')
+                  : 'Data tidak tersedia'}
+              </span>
+            </p>
+            <p className="mt-1 text-[12px] text-[#6f8787]">
+              Rumus: (jumlah faskes / jumlah penduduk) × 100.000
             </p>
 
             {/* Gradient bar posisi kepadatan — hanya di card ini */}
