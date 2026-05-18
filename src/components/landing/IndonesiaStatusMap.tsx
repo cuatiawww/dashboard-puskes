@@ -298,7 +298,7 @@ export default function IndonesiaStatusMap() {
   const hovered = provinces.find((p) => p.id === hoveredProvince)
 
   return (
-    <div className="relative h-full min-h-[470px] w-full overflow-hidden rounded-2xl border border-[#d9eceb] bg-[#f0fafa]">
+    <div className="relative h-full w-full overflow-hidden rounded-2xl border border-[#d9eceb] bg-[#f0fafa]">
       {/* Map SVG */}
       <svg
         viewBox="0 -10 640 240"
@@ -358,22 +358,22 @@ export default function IndonesiaStatusMap() {
       )}
 
       {/* Legend — always visible, clickable for filtering */}
-      <div className="absolute bottom-4 left-4 rounded-xl border border-[#c8e6e5] bg-white/95 p-3 shadow-sm">
-        <p className="mb-2 text-xs font-bold text-[#2a3838]">Legenda Status</p>
-        <ul className="space-y-1.5">
+      <div className="absolute bottom-2 left-2 max-w-[calc(100%-1rem)] rounded-lg border border-[#c8e6e5] bg-white/95 p-2 shadow-sm sm:bottom-4 sm:left-4 sm:max-w-none sm:rounded-xl sm:p-3">
+        <p className="mb-1.5 text-[11px] font-bold text-[#2a3838] sm:mb-2 sm:text-xs">Legenda Status</p>
+        <ul className="space-y-1 sm:space-y-1.5">
           {legendItems.map((item) => {
             const isSelected = activeFilter === item
             return (
               <li
                 key={item}
-                className="flex cursor-pointer items-center gap-2 text-xs transition-opacity"
+                className="flex cursor-pointer items-center gap-1.5 text-[11px] transition-opacity sm:gap-2 sm:text-xs"
                 style={{
                   opacity: activeFilter && !isSelected ? 0.45 : 1,
                 }}
                 onClick={() => setActiveFilter(isSelected ? null : item)}
               >
                 <span
-                  className="inline-block h-3.5 w-3.5 rounded-[3px] transition-all"
+                  className="inline-block h-3 w-3 rounded-[3px] transition-all sm:h-3.5 sm:w-3.5"
                   style={{
                     backgroundColor: statusColors[item],
                     outline: isSelected ? `2px solid ${statusColors[item]}` : 'none',
@@ -392,7 +392,7 @@ export default function IndonesiaStatusMap() {
         </ul>
         {activeFilter && (
           <button
-            className="mt-2 w-full rounded-md py-1 text-[11px] font-semibold text-[#0f8f96] hover:bg-[#f0fafa]"
+            className="mt-1.5 w-full rounded-md py-1 text-[10px] font-semibold text-[#0f8f96] hover:bg-[#f0fafa] sm:mt-2 sm:text-[11px]"
             onClick={() => setActiveFilter(null)}
           >
             Reset filter

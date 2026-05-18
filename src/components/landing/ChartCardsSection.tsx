@@ -215,20 +215,20 @@ function RingkasanFaskesCard({
       description="Ringkasan ini menampilkan proporsi fasilitas kesehatan secara nasional per jenis layanan. Gunakan daftar di samping untuk menyorot atau memfilter kategori pada chart."
     >
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(260px,320px)_minmax(0,1fr)] lg:items-center">
-        <div className="relative mx-auto h-[280px] w-full max-w-[320px]">
+        <div className="relative mx-auto h-[240px] w-full max-w-[280px] sm:h-[280px] sm:max-w-[320px]">
           <canvas
             ref={canvasRef}
             aria-label="Ringkasan Faskes Secara Nasional"
             role="img"
           />
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-            <span className="text-[14px] font-semibold uppercase tracking-[0.2em] text-[#516b6b]">
+            <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[#516b6b] sm:text-[14px] sm:tracking-[0.2em]">
               {isAllActive ? 'Total' : `${selectedIds.length} Jenis Aktif`}
             </span>
-            <span className="mt-2 text-[34px] font-bold leading-none text-[#1d2f2f] sm:text-[42px]">
+            <span className="mt-2 text-[26px] font-bold leading-none text-[#1d2f2f] sm:text-[42px]">
               {formatNumber(totalValue)}
             </span>
-            <span className="mt-2 text-[15px] font-bold uppercase tracking-[0.12em] text-[#2c5756]">
+            <span className="mt-1.5 text-[13px] font-bold uppercase tracking-[0.1em] text-[#2c5756] sm:mt-2 sm:text-[15px] sm:tracking-[0.12em]">
               {isAllActive ? 'Faskes' : 'Faskes'}
             </span>
           </div>
@@ -292,6 +292,7 @@ function SebaranJenisFaskesCard({
   const buildChart = () => {
     if (!canvasRef.current || !window.Chart) return
     chartRef.current?.destroy()
+    const isMobile = window.innerWidth < 640
 
     const valueLabelsPlugin = {
       id: 'valueLabelsPlugin',
@@ -305,18 +306,20 @@ function SebaranJenisFaskesCard({
         const { ctx } = chart
         const meta = chart.getDatasetMeta(0)
         ctx.save()
-        ctx.font = '700 11px Arial'
-        ctx.fillStyle = '#ffffff'
+        ctx.font = isMobile ? '700 10px Arial' : '700 11px Arial'
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.18)'
-        ctx.shadowBlur = 6
+        ctx.shadowColor = 'transparent'
+        ctx.shadowBlur = 0
 
         filteredData.forEach((item, index) => {
           const bar = meta.data[index]
           if (!bar) return
 
-          const labelY = (bar.base + bar.y) / 2
+          const barHeight = Math.abs(bar.base - bar.y)
+          const isSmallBar = barHeight < (isMobile ? 28 : 34)
+          const labelY = isSmallBar ? bar.y - 9 : (bar.base + bar.y) / 2
+          ctx.fillStyle = isSmallBar ? '#2d4e4d' : '#ffffff'
           ctx.fillText(formatNumber(item.value), bar.x, labelY)
         })
 
@@ -334,11 +337,11 @@ function SebaranJenisFaskesCard({
           {
             data: filteredData.map((item) => item.value),
             backgroundColor: filteredData.map((item) => item.color),
-            borderRadius: 10,
+            borderRadius: isMobile ? 4 : 10,
             borderSkipped: false,
             barPercentage: 0.72,
             categoryPercentage: filteredData.length === 1 ? 0.46 : 0.76,
-            minBarLength: 22,
+            minBarLength: isMobile ? 10 : 22,
           },
         ],
       },
@@ -368,7 +371,7 @@ function SebaranJenisFaskesCard({
             border: { display: false },
             ticks: {
               color: '#425d5d',
-              font: { size: 12, weight: '600' },
+              font: { size: isMobile ? 11 : 12, weight: '600' },
               maxRotation: 0,
               minRotation: 0,
             },
