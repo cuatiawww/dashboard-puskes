@@ -1,0 +1,27 @@
+services:
+  dashboardfaskes:
+    container_name: dashboardfaskes
+    image: dashboardfaskes
+    # ports:
+    #   - 3000:3000
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - GOOGLE_AI_API_KEY=${GOOGLE_AI_API_KEY}
+    volumes:
+      - modules_dashboardfaskes:/app/node_modules
+    environment:
+      NODE_ENV: production
+    restart: unless-stopped
+    networks:
+      - proxy
+
+volumes:
+  modules_dashboardfaskes:
+    driver:local
+
+networks:
+  proxy:
+    external: true
+    name: proxynet

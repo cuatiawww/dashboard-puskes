@@ -1,0 +1,23 @@
+stages:
+  - deploy
+
+.deploy_script: &deploy_script
+  - 'export GOOGLE_AI_API_KEY=${GOOGLE_AI_API_KEY}'
+  - 'docker build -t dashboardfaskes'
+  - 'docker compose down || true'
+  - 'docker compose up -d'
+
+deploy-staging:
+  stage: deploy
+  tags:
+    - deploy
+  only:
+    - master
+  variables:
+    GIT_STRATEGY: fetch
+    GIT_CLEAN_FLAGS: -ffdx
+    GIT_DEPTH: 0
+  script:
+    - *deploy_script
+  after_script:
+    - rm -f /app/docker-compose.yml /app/.dockerignore

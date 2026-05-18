@@ -1,0 +1,26 @@
+# Git & CI
+.git
+.gitignore
+.gitlab-ci.yml
+
+# Docker / infra
+Dockerfile
+# docker-compose*.yml
+# nginx.conf
+
+# Dependencies
+node_modules
+
+# Env & secrets
+.env
+.env.*
+*.pem
+*.key
+POSTMAN
+docker-compose*.yml
+.dockerignore
+
+# Logs & cache
+npm-debug.log
+yarn-error.log
+.next/cache
