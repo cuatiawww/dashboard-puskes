@@ -6,7 +6,7 @@ import { ChevronDown, Globe, MapPin, MapPinned } from 'lucide-react'
 export type DropdownOption = { value: string; label: string }
 
 type FilterItem = {
-  id: string
+  id: 'cakupan' | 'provinsi' | 'kabkota'
   icon: 'globe' | 'pin' | 'map'
   options: DropdownOption[]
 }
@@ -42,7 +42,7 @@ export default function FilterDropdownBar({
   disableProvinsi?: boolean
   disableKabupaten?: boolean
 }) {
-  const selected = {
+  const selected: Record<FilterItem['id'], string> = {
     cakupan: selectedCakupan,
     provinsi: selectedProvinsi,
     kabkota: selectedKabupaten,
