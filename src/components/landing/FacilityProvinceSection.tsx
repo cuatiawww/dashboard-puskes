@@ -8,6 +8,7 @@ export type FacilityKey = 'rumahSakit' | 'puskesmas' | 'pustu' | 'klinik' | 'pos
 type FacilityFocus = FacilityKey | 'all'
 
 type ProvinceRow = {
+  id: string
   name: string
   rumahSakit: number
   puskesmas: number
@@ -17,13 +18,20 @@ type ProvinceRow = {
   bbkk: number
 }
 
-const rows: ProvinceRow[] = [
-  { name: 'DKI Jakarta', rumahSakit: 52, puskesmas: 26, pustu: 18, klinik: 44, posyandu: 89, bbkk: 8 },
-  { name: 'Jawa Barat', rumahSakit: 82, puskesmas: 16, pustu: 33, klinik: 71, posyandu: 79, bbkk: 12 },
-  { name: 'Jawa Tengah', rumahSakit: 42, puskesmas: 24, pustu: 28, klinik: 52, posyandu: 91, bbkk: 10 },
-  { name: 'Jawa Timur', rumahSakit: 54, puskesmas: 26, pustu: 29, klinik: 68, posyandu: 76, bbkk: 11 },
-  { name: 'Banten', rumahSakit: 33, puskesmas: 30, pustu: 17, klinik: 40, posyandu: 75, bbkk: 6 },
-]
+type SebaranApiItem = {
+  kode?: string
+  nama?: string
+  kode_provinsi?: string
+  nama_provinsi?: string
+  kode_kabupaten?: string
+  nama_kabupaten?: string
+  total_rs?: string | number
+  total_puskesmas?: string | number
+  total_pustu?: string | number
+  total_klinik?: string | number
+  total_posyandu?: string | number
+  total_bkk?: string | number
+} & Record<string, string | number | undefined>
 
 const FACILITY_KEYS: FacilityKey[] = ['rumahSakit', 'puskesmas', 'pustu', 'klinik', 'posyandu', 'bbkk']
 
@@ -56,8 +64,12 @@ type TooltipState = {
 
 export default function FacilityProvinceSection({
   activeFacility = 'all',
+  selectedProvinsi = '',
+  selectedKabupaten = '',
 }: {
   activeFacility?: FacilityFocus
+  selectedProvinsi?: string
+  selectedKabupaten?: string
 }) {
   const [activeKeys, setActiveKeys] = useState<Set<FacilityKey>>(() =>
     activeFacility === 'all' ? new Set(FACILITY_KEYS) : new Set([activeFacility])
@@ -69,7 +81,38 @@ export default function FacilityProvinceSection({
     visible: false, province: null,
   })
   const [mounted] = useState(true)
+  const [rows, setRows] = useState<ProvinceRow[]>([])
+  const [loading, setLoading] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
+
+  const toNumber = (value: string | number | undefined) => {
+    if (typeof value === 'number') return value
+    const parsed = Number.parseInt((value ?? '0').toString().replace(/[^\d-]/g, ''), 10)
+    return Number.isNaN(parsed) ? 0 : parsed
+  }
+
+  const mapApiRowToProvinceRow = (item: SebaranApiItem, index: number): ProvinceRow => {
+    const id =
+      item.kode ??
+      item.kode_kabupaten ??
+      item.kode_provinsi ??
+      `row-${index}`
+    const name =
+      item.nama ??
+      item.nama_kabupaten ??
+      item.nama_provinsi ??
+      `Wilayah ${index + 1}`
+    return {
+      id,
+      name,
+      rumahSakit: toNumber(item.total_rs ?? item.total_rumah_sakit),
+      puskesmas: toNumber(item.total_puskesmas),
+      pustu: toNumber(item.total_pustu),
+      klinik: toNumber(item.total_klinik),
+      posyandu: toNumber(item.total_posyandu),
+      bbkk: toNumber(item.total_bkk ?? item.total_bbkk),
+    }
+  }
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -80,6 +123,28 @@ export default function FacilityProvinceSection({
     if (panel.visible) document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [panel.visible])
+
+  useEffect(() => {
+    void (async () => {
+      setLoading(true)
+      try {
+        const response = await fetch('/api/dashboard-faskes/sebaran-faskes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            kode_provinsi: selectedProvinsi,
+            kode_kabupaten: selectedKabupaten,
+          }),
+        })
+        if (!response.ok) return
+        const payload = (await response.json()) as { data?: SebaranApiItem[] }
+        const mapped = (payload.data ?? []).map(mapApiRowToProvinceRow)
+        setRows(mapped)
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [selectedProvinsi, selectedKabupaten])
 
   function toggleKey(key: FacilityKey) {
     setActiveKeys(prev => {
@@ -97,6 +162,7 @@ export default function FacilityProvinceSection({
 
   // Max total among all rows for currently active keys — determines longest bar
   const maxVisTotal = Math.max(
+    1,
     ...rows.map(row =>
       FACILITY_KEYS.filter(k => activeKeys.has(k)).reduce((s, k) => s + row[k], 0)
     )
@@ -205,6 +271,9 @@ export default function FacilityProvinceSection({
               <p className="mt-2 text-[15px] leading-relaxed text-[#4b4b4b] sm:text-[16px]">
                Menampilkan pemetaan distribusi dan jumlah fasilitas kesehatan yang tersebar di setiap provinsi.
               </p>
+              {loading && (
+                <p className="mt-2 text-[12px] font-medium text-[#0f8f96]">Memuat data sebaran faskes...</p>
+              )}
 
             </div>
 
@@ -250,7 +319,7 @@ export default function FacilityProvinceSection({
 
               return (
                 <div
-                  key={row.name}
+                  key={row.id}
                   className="group grid cursor-pointer grid-cols-[120px_minmax(0,1fr)] items-center gap-3 sm:grid-cols-[140px_minmax(0,1fr)]"
                   onClick={() => setPanel({ visible: true, province: row })}
                 >
@@ -312,6 +381,12 @@ export default function FacilityProvinceSection({
               )
             })}
           </div>
+
+          {!loading && rows.length === 0 && (
+            <div className="mt-6 rounded-xl border border-dashed border-[#cde3e2] bg-[#f7fbfb] p-4 text-sm text-[#5d7575]">
+              Data sebaran belum tersedia untuk filter ini.
+            </div>
+          )}
 
           <div className="mt-5 flex justify-end">
             <Link href="#" className="text-[14px] text-[#3a4040] underline underline-offset-4 hover:text-[#0f8f96]">
