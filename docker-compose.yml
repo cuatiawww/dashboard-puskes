@@ -9,6 +9,8 @@ services:
       dockerfile: Dockerfile
       args:
         - GOOGLE_AI_API_KEY=${GOOGLE_AI_API_KEY}
+        - DASHBOARD_FASKES_BASE_URL=${DASHBOARD_FASKES_BASE_URL}
+        - DASHBOARD_FASKES_TOKEN=${DASHBOARD_FASKES_TOKEN}
     volumes:
       - modules_dashboardfaskes:/app/node_modules
     environment:
