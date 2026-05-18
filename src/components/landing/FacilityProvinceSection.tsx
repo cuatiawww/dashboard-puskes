@@ -2,37 +2,46 @@
 
 import { useState, useRef, useEffect, type ComponentType } from 'react'
 import Link from 'next/link'
-import { Building2, HeartPulse, Stethoscope } from 'lucide-react'
+import { Building, Building2, HeartPulse, HousePlus, ShieldPlus, Stethoscope } from 'lucide-react'
 
-export type FacilityKey = 'rumahSakit' | 'puskesmas' | 'posyandu'
+export type FacilityKey = 'rumahSakit' | 'puskesmas' | 'pustu' | 'klinik' | 'posyandu' | 'bbkk'
 type FacilityFocus = FacilityKey | 'all'
 
 type ProvinceRow = {
   name: string
   rumahSakit: number
   puskesmas: number
+  pustu: number
+  klinik: number
   posyandu: number
+  bbkk: number
 }
 
 const rows: ProvinceRow[] = [
-  { name: 'DKI Jakarta', rumahSakit: 52, puskesmas: 26, posyandu: 89 },
-  { name: 'Jawa Barat',  rumahSakit: 82, puskesmas: 16, posyandu: 79 },
-  { name: 'Jawa Tengah', rumahSakit: 42, puskesmas: 24, posyandu: 91 },
-  { name: 'Jawa Timur',  rumahSakit: 54, puskesmas: 26, posyandu: 76 },
-  { name: 'Banten',      rumahSakit: 33, puskesmas: 30, posyandu: 75 },
+  { name: 'DKI Jakarta', rumahSakit: 52, puskesmas: 26, pustu: 18, klinik: 44, posyandu: 89, bbkk: 8 },
+  { name: 'Jawa Barat', rumahSakit: 82, puskesmas: 16, pustu: 33, klinik: 71, posyandu: 79, bbkk: 12 },
+  { name: 'Jawa Tengah', rumahSakit: 42, puskesmas: 24, pustu: 28, klinik: 52, posyandu: 91, bbkk: 10 },
+  { name: 'Jawa Timur', rumahSakit: 54, puskesmas: 26, pustu: 29, klinik: 68, posyandu: 76, bbkk: 11 },
+  { name: 'Banten', rumahSakit: 33, puskesmas: 30, pustu: 17, klinik: 40, posyandu: 75, bbkk: 6 },
 ]
 
-const FACILITY_KEYS: FacilityKey[] = ['rumahSakit', 'puskesmas', 'posyandu']
+const FACILITY_KEYS: FacilityKey[] = ['rumahSakit', 'puskesmas', 'pustu', 'klinik', 'posyandu', 'bbkk']
 
 const FACILITY_META: Record<FacilityKey, { label: string; color: string }> = {
   rumahSakit: { label: 'Rumah Sakit', color: '#2db9bb' },
-  puskesmas:  { label: 'Puskesmas',   color: '#0b7b86' },
-  posyandu:   { label: 'Posyandu',    color: '#5c9bd5' },
+  puskesmas: { label: 'Puskesmas', color: '#0b7b86' },
+  pustu: { label: 'Pustu', color: '#3e8ed0' },
+  klinik: { label: 'Klinik', color: '#2a9d8f' },
+  posyandu: { label: 'Posyandu', color: '#5c9bd5' },
+  bbkk: { label: 'BBKK/BKK/LKK', color: '#f2a93b' },
 }
 const FACILITY_ICON: Record<FacilityKey, ComponentType<{ className?: string }>> = {
   rumahSakit: Building2,
   puskesmas: Stethoscope,
+  pustu: HousePlus,
+  klinik: Building,
   posyandu: HeartPulse,
+  bbkk: ShieldPlus,
 }
 
 type TooltipState = {
@@ -260,14 +269,14 @@ export default function FacilityProvinceSection({
                       {visKeys.map((k, ki) => {
                         const segPct = visTotal > 0 ? (row[k] / visTotal) * 100 : 0
                         const isFirst = ki === 0
-                        const isLast  = ki === visKeys.length - 1
+                        const isLast = ki === visKeys.length - 1
                         return (
                           <div
                             key={k}
-                            className="flex items-center justify-center overflow-hidden whitespace-nowrap text-[11px] font-medium text-white transition-[flex] duration-[650ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:brightness-110"
+                            className="flex items-center justify-center overflow-hidden whitespace-nowrap text-[11px] font-semibold text-white transition-[flex] duration-[650ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:brightness-110"
                             style={{
                               flex: segPct,
-                              minWidth: segPct > 12 ? 26 : 0,
+                              minWidth: 26,
                               backgroundColor: FACILITY_META[k].color,
                               borderTopLeftRadius:     isFirst ? 6 : 0,
                               borderBottomLeftRadius:  isFirst ? 6 : 0,
@@ -283,7 +292,9 @@ export default function FacilityProvinceSection({
                             onMouseLeave={e => { e.stopPropagation(); setTooltip(p => ({ ...p, visible: false })) }}
                             onClick={e => e.stopPropagation()}
                           >
-                            {segPct > 12 ? row[k] : ''}
+                            <span className="px-1 leading-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.18)]">
+                              {row[k]}
+                            </span>
                           </div>
                         )
                       })}

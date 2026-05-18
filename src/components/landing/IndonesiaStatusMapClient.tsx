@@ -13,16 +13,17 @@ import type { FeatureLike } from 'ol/Feature'
 import type Feature from 'ol/Feature'
 import 'ol/ol.css'
 
-type FacilityStatus = 'Siap Penuh' | 'Siap Parsial' | 'Belum Siap' | 'Perlu Validasi'
+type DensityLevel = 'Rendah' | 'Sedang' | 'Tinggi' | 'Sangat Tinggi'
 
-const statusColor: Record<FacilityStatus, string> = {
-  'Siap Penuh': '#0a6e75',
-  'Siap Parsial': '#1dc7bf',
-  'Belum Siap': '#7dd9d5',
-  'Perlu Validasi': '#4d90d0',
+// Sequential: terang (sedikit faskes) → gelap (banyak faskes)
+const densityColors: Record<DensityLevel, string> = {
+  Rendah: '#ffffb2',
+  Sedang: '#fecc5c',
+  Tinggi: '#fd8d3c',
+  'Sangat Tinggi': '#bd0026',
 }
 
-const statusOrder: FacilityStatus[] = ['Siap Penuh', 'Siap Parsial', 'Belum Siap', 'Perlu Validasi']
+const densityOrder: DensityLevel[] = ['Rendah', 'Sedang', 'Tinggi', 'Sangat Tinggi']
 
 function normalizeProvinceName(value: string) {
   return value
@@ -33,13 +34,45 @@ function normalizeProvinceName(value: string) {
     .trim()
 }
 
-function statusForProvinceName(name: string) {
+const JABODETABEK_PROVINCES = ['DKI JAKARTA', 'JAKARTA', 'D.K.I. JAKARTA', 'DKI. JAKARTA']
+
+const HIGH_DENSITY_PROVINCES = [
+  'JAWA BARAT',
+  'BANTEN',
+  'JAWA TIMUR',
+  'JAWA TENGAH',
+  'D.I. YOGYAKARTA',
+  'DI YOGYAKARTA',
+  'YOGYAKARTA',
+]
+
+function densityValueForProvinceName(name: string): number {
   const normalized = normalizeProvinceName(name)
+
+  if (JABODETABEK_PROVINCES.some((j) => normalized.includes(j))) {
+    return 90
+  }
+
+  if (HIGH_DENSITY_PROVINCES.some((h) => normalized.includes(normalizeProvinceName(h)))) {
+    let hash = 0
+    for (let i = 0; i < normalized.length; i += 1) {
+      hash = (hash * 31 + normalized.charCodeAt(i)) >>> 0
+    }
+    return 55 + (hash % 19)
+  }
+
   let hash = 0
   for (let i = 0; i < normalized.length; i += 1) {
     hash = (hash * 31 + normalized.charCodeAt(i)) >>> 0
   }
-  return statusOrder[hash % statusOrder.length]
+  return 18 + (hash % 37)
+}
+
+function levelFromDensity(value: number): DensityLevel {
+  if (value < 35) return 'Rendah'
+  if (value < 55) return 'Sedang'
+  if (value < 75) return 'Tinggi'
+  return 'Sangat Tinggi'
 }
 
 export default function IndonesiaStatusMapClient() {
@@ -47,12 +80,13 @@ export default function IndonesiaStatusMapClient() {
   const mapInstanceRef = useRef<Map | null>(null)
   const provinceLayerRef = useRef<VectorLayer<VectorSource> | null>(null)
   const provinceSourceRef = useRef<VectorSource | null>(null)
-  const activeFilterRef = useRef<FacilityStatus | null>(null)
+  const activeFilterRef = useRef<DensityLevel | null>(null)
   const selectedProvinceNameRef = useRef<string>('')
-  const [activeFilter, setActiveFilter] = useState<FacilityStatus | null>(null)
+  const [activeFilter, setActiveFilter] = useState<DensityLevel | null>(null)
   const [selectedProvince, setSelectedProvince] = useState<{
     name: string
-    status: FacilityStatus
+    densityLevel: DensityLevel
+    densityValue: number
     kode: string | number
   } | null>(null)
 
@@ -75,17 +109,20 @@ export default function IndonesiaStatusMapClient() {
     const provinceLayer = new VectorLayer({
       source: provinceSource,
       style: (feature: FeatureLike) => {
-        const status = statusForProvinceName(String(feature.get('Propinsi') || ''))
+        const densityValue = densityValueForProvinceName(String(feature.get('Propinsi') || ''))
+        const densityLevel = levelFromDensity(densityValue)
         const selectedName = selectedProvinceNameRef.current
-        const isSelected = selectedName !== '' && selectedName === String(feature.get('Propinsi') || '')
-        const disabled = activeFilterRef.current !== null && status !== activeFilterRef.current
+        const isSelected =
+          selectedName !== '' && selectedName === String(feature.get('Propinsi') || '')
+        const disabled =
+          activeFilterRef.current !== null && densityLevel !== activeFilterRef.current
         return new Style({
           fill: new Fill({
-            color: disabled ? 'rgba(194, 219, 219, 0.45)' : statusColor[status],
+            color: disabled ? 'rgba(210, 210, 210, 0.4)' : densityColors[densityLevel],
           }),
           stroke: new Stroke({
-            color: isSelected ? '#0a6e75' : '#ffffff',
-            width: isSelected ? 2.2 : 1,
+            color: isSelected ? '#111' : '#ffffff',
+            width: isSelected ? 2.5 : 0.8,
           }),
         })
       },
@@ -115,15 +152,17 @@ export default function IndonesiaStatusMapClient() {
     })
 
     map.on('singleclick', (evt) => {
-      const clickedFeature = map.forEachFeatureAtPixel(evt.pixel, (featureAtPixel) => featureAtPixel as Feature) ?? null
+      const clickedFeature =
+        map.forEachFeatureAtPixel(evt.pixel, (f) => f as Feature) ?? null
       if (!clickedFeature) {
         setSelectedProvince(null)
         return
       }
       const propinsiName = String(clickedFeature.get('Propinsi') || '')
-      const status = statusForProvinceName(propinsiName)
+      const densityValue = densityValueForProvinceName(propinsiName)
+      const densityLevel = levelFromDensity(densityValue)
       const kode = clickedFeature.get('kode') ?? '-'
-      setSelectedProvince({ name: propinsiName, status, kode })
+      setSelectedProvince({ name: propinsiName, densityLevel, densityValue, kode })
       const geometry = clickedFeature.getGeometry()
       if (!geometry) return
       map.getView().fit(geometry.getExtent(), {
@@ -152,7 +191,12 @@ export default function IndonesiaStatusMapClient() {
     if (activeFilter === null) return
     const firstMatch = source
       .getFeatures()
-      .find((f) => statusForProvinceName(String(f.get('Propinsi') || '')) === activeFilter)
+      .find(
+        (f) =>
+          levelFromDensity(
+            densityValueForProvinceName(String(f.get('Propinsi') || '')),
+          ) === activeFilter,
+      )
     if (!firstMatch || !mapInstanceRef.current) return
     const geometry = firstMatch.getGeometry()
     if (!geometry) return
@@ -167,17 +211,51 @@ export default function IndonesiaStatusMapClient() {
     provinceLayerRef.current?.changed()
   }, [selectedProvince])
 
-  const legendItems: FacilityStatus[] = ['Siap Penuh', 'Siap Parsial', 'Belum Siap', 'Perlu Validasi']
+  // Gradient bar hanya untuk card klik provinsi
+  const gradientBar = `linear-gradient(to right, ${densityColors['Rendah']}, ${densityColors['Sedang']}, ${densityColors['Tinggi']}, ${densityColors['Sangat Tinggi']})`
+
+  const markerPercent =
+    selectedProvince
+      ? selectedProvince.densityLevel === 'Rendah'
+        ? 8
+        : selectedProvince.densityLevel === 'Sedang'
+        ? 35
+        : selectedProvince.densityLevel === 'Tinggi'
+        ? 65
+        : 92
+      : 0
 
   return (
     <div className="relative h-full min-h-[510px] w-full overflow-hidden rounded-2xl border border-[#cde9e8] bg-transparent">
       <div ref={mapRef} className="h-full w-full" />
 
+      {/* Legend choropleth */}
       <div className="absolute bottom-5 left-5 min-w-[200px] rounded-2xl border border-[#bfe3e2] bg-[#f3fffe]/95 p-4 shadow-[0_10px_30px_rgba(9,88,89,0.15)]">
-        <p className="mb-2 text-[12px] font-bold uppercase tracking-wide text-[#2a4040]">Legenda Status</p>
+        <p className="mb-1 text-[12px] font-bold uppercase tracking-wide text-[#2a4040]">
+          Legenda
+        </p>
+        <p className="mb-2 text-[11px] leading-relaxed text-[#4c6363]">
+          Gradasi kepadatan/jumlah total faskes per wilayah
+        </p>
         <ul className="space-y-1.5">
-          {legendItems.map((item) => {
+          {densityOrder.map((item) => {
             const isSelected = activeFilter === item
+            const rangeLabel =
+              item === 'Rendah'
+                ? '< 35'
+                : item === 'Sedang'
+                ? '35 - 54'
+                : item === 'Tinggi'
+                ? '55 - 74'
+                : '>= 75'
+            const hintLabel =
+              item === 'Rendah'
+                ? 'Jumlah faskes sedikit'
+                : item === 'Sedang'
+                ? 'Jumlah faskes menengah'
+                : item === 'Tinggi'
+                ? 'Jumlah faskes tinggi'
+                : 'Jumlah faskes sangat padat'
             return (
               <li
                 key={item}
@@ -188,13 +266,19 @@ export default function IndonesiaStatusMapClient() {
                 <span
                   className="inline-block h-3.5 w-3.5 flex-shrink-0 rounded-[3px]"
                   style={{
-                    backgroundColor: statusColor[item],
-                    outline: isSelected ? `2px solid ${statusColor[item]}` : 'none',
+                    backgroundColor: densityColors[item],
+                    outline: isSelected ? `2px solid ${densityColors[item]}` : 'none',
                     outlineOffset: '2px',
                   }}
                 />
-                <span className="text-[13px] font-medium" style={{ color: isSelected ? statusColor[item] : '#3a5050' }}>
-                  {item}
+                <span
+                  className="text-[13px] font-medium leading-tight"
+                  style={{ color: isSelected ? densityColors[item] : '#3a5050' }}
+                >
+                  {item} ({rangeLabel})
+                  <span className="block text-[10px] font-normal text-[#6c8585]">
+                    {hintLabel}
+                  </span>
                 </span>
               </li>
             )
@@ -205,21 +289,64 @@ export default function IndonesiaStatusMapClient() {
             className="mt-3 w-full rounded-md border border-[#c8e6e5] bg-white py-1.5 text-[12px] font-semibold text-[#0f8f96] transition-colors hover:bg-[#eef9f9]"
             onClick={() => setActiveFilter(null)}
           >
-            Reset filter
+            Reset gradasi
           </button>
         )}
       </div>
 
+      {/* Card provinsi — gradient bar muncul HANYA di sini saat diklik */}
       {selectedProvince && (
-        <div className="absolute right-5 top-5 min-w-[240px] max-w-[260px] rounded-2xl border border-[#bfe3e2] bg-[#f3fffe]/95 p-4 shadow-[0_10px_30px_rgba(9,88,89,0.15)]">
-          <p className="text-[12px] font-bold uppercase tracking-wide text-[#2a4040]">Provinsi Dipilih</p>
-          <p className="mt-1 text-[20px] font-bold leading-tight text-[#223333]">{selectedProvince.name}</p>
-          <p className="mt-2 text-[13px] text-[#4a6060]">
-            Status:{' '}
-            <span className="font-semibold" style={{ color: statusColor[selectedProvince.status], fontSize: '14px' }}>
-              {selectedProvince.status}
-            </span>
-          </p>
+        <div className="absolute right-5 top-5 min-w-[250px] max-w-[270px] overflow-hidden rounded-2xl border border-[#bfe3e2] bg-[#f3fffe]/95 shadow-[0_10px_30px_rgba(9,88,89,0.15)]">
+          {/* Strip warna level di atas card */}
+          <div
+            className="h-2 w-full"
+            style={{ backgroundColor: densityColors[selectedProvince.densityLevel] }}
+          />
+          <div className="p-4">
+            <p className="text-[12px] font-bold uppercase tracking-wide text-[#2a4040]">
+              Provinsi Dipilih
+            </p>
+            <p className="mt-1 text-[20px] font-bold leading-tight text-[#223333]">
+              {selectedProvince.name}
+            </p>
+
+            <p className="mt-2 text-[13px] text-[#4a6060]">
+              Kategori:{' '}
+              <span
+                className="font-semibold"
+                style={{ color: densityColors[selectedProvince.densityLevel], fontSize: '14px' }}
+              >
+                {selectedProvince.densityLevel}
+              </span>
+            </p>
+            <p className="mt-1 text-[13px] text-[#4a6060]">
+              Rasio kepadatan:{' '}
+              <span className="font-semibold text-[#223333]">
+                {selectedProvince.densityValue} faskes / 100.000 penduduk
+              </span>
+            </p>
+
+            {/* Gradient bar posisi kepadatan — hanya di card ini */}
+            <div className="mt-3">
+              <p className="mb-1 text-[10px] text-[#7a9f9f]">Posisi kepadatan nasional</p>
+              <div
+                className="relative h-2.5 w-full rounded-full"
+                style={{ background: gradientBar }}
+              >
+                <div
+                  className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-md"
+                  style={{
+                    left: `${markerPercent}%`,
+                    backgroundColor: densityColors[selectedProvince.densityLevel],
+                  }}
+                />
+              </div>
+              <div className="mt-1 flex justify-between text-[10px] text-[#7a9f9f]">
+                <span>Rendah</span>
+                <span>Sangat Tinggi</span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

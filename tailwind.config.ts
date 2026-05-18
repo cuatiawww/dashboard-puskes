@@ -24,8 +24,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        poppins: ["var(--font-poppins)", "sans-serif"],
-        roboto: ["var(--font-roboto)", "sans-serif"],
+        poppins: ["var(--font-manrope)", "sans-serif"],
+        roboto: ["var(--font-manrope)", "sans-serif"],
+        manrope: ["var(--font-manrope)", "sans-serif"],
       },
       keyframes: {
         blink: {

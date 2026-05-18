@@ -29,6 +29,8 @@ interface InsightModalProps {
   open: boolean
   defaultTab?: ModalTab
   aiInsight?: InsightData | null
+  sourceDataLabel: string
+  updatedAtLabel: string
   onClose: () => void
 }
 
@@ -255,7 +257,14 @@ const TABS: { key: ModalTab; label: string; Icon: React.ElementType }[] = [
   { key: 'provinsi', label: 'Per Provinsi', Icon: Map },
 ]
 
-export default function InsightModal({ open, defaultTab = 'ringkasan', aiInsight, onClose }: InsightModalProps) {
+export default function InsightModal({
+  open,
+  defaultTab = 'ringkasan',
+  aiInsight,
+  sourceDataLabel,
+  updatedAtLabel,
+  onClose,
+}: InsightModalProps) {
   const [activeTab, setActiveTab] = useState<ModalTab>(defaultTab)
 
   useEffect(() => {
@@ -285,7 +294,7 @@ export default function InsightModal({ open, defaultTab = 'ringkasan', aiInsight
           </div>
           <div className="flex-1">
             <h2 className="text-[17px] font-bold leading-tight text-[#0f3535]">Analisis Kinerja Fasilitas Kesehatan Nasional</h2>
-            <p className="mt-0.5 text-[12px] text-[#4f7070]">Data per 11 Mei 2026 - Sumber: Kemenkes RI</p>
+            <p className="mt-0.5 text-[12px] text-[#4f7070]">{sourceDataLabel}</p>
           </div>
           <button onClick={onClose} className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-[#bad9d8] bg-white/95 transition-colors hover:border-[#85c5c2] hover:bg-[#f4fbfb]" aria-label="Tutup modal">
             <X className="h-4 w-4 text-[#5a7070]" />
@@ -314,7 +323,7 @@ export default function InsightModal({ open, defaultTab = 'ringkasan', aiInsight
         <div className="flex flex-shrink-0 items-center justify-between gap-3 border-t border-[#cde8e7] bg-[#f7fdfd] px-6 py-3.5">
           <div className="flex items-center gap-1.5 text-[11px] text-[#7a9898]">
             <Clock className="h-3.5 w-3.5" />
-            Diperbarui 11 Mei 2026, 10:00 WIB
+            {updatedAtLabel}
           </div>
           <div className="flex gap-2">
             <button className="flex items-center gap-1.5 rounded-[10px] border border-[#c0e0e0] bg-[#e8f5f5] px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-[#0f8f96] transition-all hover:-translate-y-0.5">

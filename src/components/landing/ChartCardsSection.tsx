@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 
-type ChartInstance = { destroy: () => void }
+type ChartInstance = { destroy: () => void; update: (mode?: string) => void }
+type FacilityFilter = 'rumah-sakit' | 'puskesmas' | 'pustu' | 'klinik' | 'posyandu' | 'bbkk'
 
 declare global {
   interface Window {
@@ -11,21 +12,34 @@ declare global {
   }
 }
 
+const FASKES_DATA = [
+  { id: 'rumah-sakit', label: 'Rumah Sakit', shortLabel: 'Rumah Sakit', value: 2956, percentage: '0,89%', color: '#2f80ed' },
+  { id: 'puskesmas', label: 'Puskesmas', shortLabel: 'Puskesmas', value: 10321, percentage: '3,12%', color: '#4ac97a' },
+  { id: 'pustu', label: 'Pustu', shortLabel: 'Pustu', value: 25147, percentage: '7,61%', color: '#ffa62b' },
+  { id: 'klinik', label: 'Klinik', shortLabel: 'Klinik', value: 9397, percentage: '2,84%', color: '#9b51e0' },
+  { id: 'posyandu', label: 'Posyandu', shortLabel: 'Posyandu', value: 282704, percentage: '85,55%', color: '#f45ca1' },
+  { id: 'bbkk', label: 'BBKK/BKK/LKK', shortLabel: 'BBKK/\nBKK/LKK', value: 132, percentage: '0,04%', color: '#39c6cf' },
+] as const
+
 let chartJsLoaded = false
 const chartJsCallbacks: (() => void)[] = []
 
 function loadChartJs(cb: () => void) {
   if (typeof window === 'undefined') return
-  if (chartJsLoaded) { cb(); return }
+  if (chartJsLoaded) {
+    cb()
+    return
+  }
   chartJsCallbacks.push(cb)
   if (chartJsCallbacks.length > 1) return
-  const s = document.createElement('script')
-  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js'
-  s.onload = () => {
+
+  const script = document.createElement('script')
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js'
+  script.onload = () => {
     chartJsLoaded = true
-    chartJsCallbacks.forEach(fn => fn())
+    chartJsCallbacks.forEach((fn) => fn())
   }
-  document.head.appendChild(s)
+  document.head.appendChild(script)
 }
 
 function useChartJs(onReady: () => void) {
@@ -35,170 +49,92 @@ function useChartJs(onReady: () => void) {
   }, [])
 }
 
-// ─── Hex → rgba helper ───────────────────────────────────────────────────────
-
-function hexFade(hex: string, alpha: number) {
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  return `rgba(${r},${g},${b},${alpha})`
+function formatNumber(value: number) {
+  return value.toLocaleString('id-ID')
 }
 
-// ─── Tooltip defaults ─────────────────────────────────────────────────────────
-
-const TT = {
-  backgroundColor: '#0f2e2e',
-  titleColor: '#fff',
-  bodyColor: '#cde8e8',
-  padding: 10,
-  cornerRadius: 8,
-  displayColors: false,
+function fadeColor(hex: string, opacity: number) {
+  const normalized = hex.replace('#', '')
+  const r = Number.parseInt(normalized.slice(0, 2), 16)
+  const g = Number.parseInt(normalized.slice(2, 4), 16)
+  const b = Number.parseInt(normalized.slice(4, 6), 16)
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`
 }
 
-// ─── Card Shell ───────────────────────────────────────────────────────────────
+function getSelectedData(selectedIds: FacilityFilter[]) {
+  return FASKES_DATA.filter((item) => selectedIds.includes(item.id))
+}
 
-function Card({
+function SectionCard({
   title,
   description,
-  badge,
   children,
-  footer,
 }: {
   title: string
-  description: string
-  badge?: string
+  description?: string
   children: React.ReactNode
-  footer?: React.ReactNode
 }) {
   return (
     <article
-      className="group flex flex-col bg-white transition-all duration-300 hover:shadow-[0_12px_40px_rgba(15,143,150,0.10)] hover:-translate-y-1"
+      className="relative overflow-hidden bg-white"
       style={{
         border: '1.5px solid #d6ecec',
-        borderRadius: '16px',
-        minHeight: '420px',
-        overflow: 'hidden',
+        borderRadius: '18px',
+        boxShadow: '0 10px 28px rgba(15, 143, 150, 0.06)',
       }}
     >
-      <div className="flex flex-col flex-1 p-5">
-        {/* Header */}
-        <div className="mb-4">
-          {badge && (
-            <span className="inline-flex items-center gap-1 mb-2 px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide bg-[#e8faf9] text-[#0f8f96] border border-[#b8e8e6]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#1dc7bf] animate-pulse" />
-              {badge}
-            </span>
-          )}
-          <h3 className="text-[16px] sm:text-[18px] font-bold tracking-wide text-[#2f2f2f] uppercase leading-tight">
+      <div className="p-5 sm:p-6">
+        <div className="mb-5">
+          <h3 className="text-[18px] font-bold uppercase leading-tight text-[#1f3131] sm:text-[20px]">
             {title}
           </h3>
-          <p className="mt-1 text-[13px] sm:text-[14px] text-[#4b4b4b] leading-relaxed">
-            {description}
-          </p>
+          {description ? (
+            <p className="mt-2 text-[14px] leading-relaxed text-[#5f7a79]">
+              {description}
+            </p>
+          ) : null}
         </div>
-
-        {/* Chart area */}
-        <div className="flex-1 flex flex-col">
-          {children}
-        </div>
-
-        {/* Footer legend */}
-        {footer && (
-          <div className="mt-4 pt-3 border-t border-[#f0f7f7]">
-            {footer}
-          </div>
-        )}
+        {children}
       </div>
     </article>
   )
 }
 
-// ─── Legend ───────────────────────────────────────────────────────────────────
-
-function Legend({
-  items,
-  activeIndex,
-  onHover,
-  onClick,
+function RingkasanFaskesCard({
+  selectedIds,
+  onSelectionChange,
 }: {
-  items: { color: string; label: string }[]
-  activeIndex?: number | null
-  onHover?: (i: number | null) => void
-  onClick?: (i: number | null) => void
+  selectedIds: FacilityFilter[]
+  onSelectionChange: (selectedIds: FacilityFilter[]) => void
 }) {
-  return (
-    <div className="flex flex-wrap gap-x-3 gap-y-1.5">
-      {items.map((l, i) => (
-        <button
-          key={l.label}
-          onMouseEnter={() => onHover?.(i)}
-          onMouseLeave={() => onHover?.(null)}
-          onClick={() => onClick?.(activeIndex === i ? null : i)}
-          className={`flex items-center gap-1.5 text-[12px] transition-all duration-200 ${
-            activeIndex != null && activeIndex !== i ? 'opacity-30' : 'opacity-100'
-          }`}
-        >
-          <span
-            className="w-2.5 h-2.5 rounded-[3px] shrink-0 transition-transform duration-200"
-            style={{
-              background: l.color,
-              transform: activeIndex === i ? 'scale(1.35)' : 'scale(1)',
-            }}
-          />
-          <span className="text-[#4a6a6a] font-medium">{l.label}</span>
-        </button>
-      ))}
-    </div>
-  )
-}
-
-// ─── Card 1: Interactive Donut ────────────────────────────────────────────────
-
-const DLI_DATA = [
-  { label: 'Siap Penuh',     value: 36,   color: '#1dc7bf' },
-  { label: 'Siap Parsial',   value: 30.7, color: '#4d90d0' },
-  { label: 'Belum Siap',     value: 23.5, color: '#fbbf24' },
-  { label: 'Perlu Validasi', value: 9.8,  color: '#c9dcdc' },
-]
-
-function DliStatusCard() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const chartRef = useRef<ChartInstance | null>(null)
-  const [activeIdx, setActiveIdx] = useState<number | null>(null)
-  const [centerLabel, setCenterLabel] = useState<{ label: string; value: string } | null>(null)
+  const [activeIndex, setActiveIndex] = useState<number | null>(null)
+  const filteredData = getSelectedData(selectedIds)
+  const totalValue = filteredData.map((item) => item.value).reduce((sum, value) => sum + value, 0)
+  const isAllActive = selectedIds.length === FASKES_DATA.length
+  const displayActiveIndex = isAllActive ? activeIndex : null
 
-  const applyHighlight = (idx: number | null) => {
-    const chart = chartRef.current as unknown as {
-      data: { datasets: { backgroundColor: string[]; borderColor: string[]; hoverOffset: number[] }[] }
-      tooltip?: { setActiveElements: (els: { datasetIndex: number; index: number }[], pos: object) => void }
-      update: (mode?: string) => void
-    }
-    if (!chart) return
+  const toggleSelection = (id: FacilityFilter) => {
+    const nextIds = selectedIds.includes(id)
+      ? selectedIds.filter((itemId) => itemId !== id)
+      : [...selectedIds, id]
 
-    if (idx !== null) {
-      chart.data.datasets[0].backgroundColor = DLI_DATA.map((d, i) =>
-        i === idx ? d.color : hexFade(d.color, 0.15)
-      )
-      chart.data.datasets[0].borderColor = DLI_DATA.map((_, i) =>
-        i === idx ? '#fff' : 'rgba(255,255,255,0.2)'
-      )
-      chart.tooltip?.setActiveElements([{ datasetIndex: 0, index: idx }], { x: 0, y: 0 })
-    } else {
-      chart.data.datasets[0].backgroundColor = DLI_DATA.map(d => d.color)
-      chart.data.datasets[0].borderColor = DLI_DATA.map(() => '#fff')
-      chart.tooltip?.setActiveElements([], {})
-    }
-    chart.update('none')
+    onSelectionChange(nextIds.length === 0 ? FASKES_DATA.map((item) => item.id) : nextIds)
   }
 
-  const handleSetActive = (idx: number | null) => {
-    setActiveIdx(idx)
-    if (idx !== null) {
-      setCenterLabel({ label: DLI_DATA[idx].label, value: `${DLI_DATA[idx].value}%` })
-    } else {
-      setCenterLabel(null)
-    }
-    applyHighlight(idx)
+  const syncColors = (index: number | null) => {
+    const chart = chartRef.current as unknown as {
+      data: { datasets: { backgroundColor: string[] }[] }
+      update: (mode?: string) => void
+    } | null
+
+    if (!chart) return
+
+    chart.data.datasets[0].backgroundColor = filteredData.map((item, itemIndex) =>
+      index === null || itemIndex === index ? item.color : fadeColor(item.color, 0.2)
+    )
+    chart.update('none')
   }
 
   const buildChart = () => {
@@ -208,131 +144,202 @@ function DliStatusCard() {
     chartRef.current = new window.Chart(canvasRef.current, {
       type: 'doughnut',
       data: {
-        labels: DLI_DATA.map(d => d.label),
-        datasets: [{
-          data: DLI_DATA.map(d => d.value),
-          backgroundColor: DLI_DATA.map(d => d.color),
-          hoverBackgroundColor: DLI_DATA.map(d => d.color),
-          borderWidth: 3,
-          borderColor: '#fff',
-          hoverBorderWidth: 3,
-          hoverOffset: 16,
-        }],
+        labels: filteredData.map((item) => item.label),
+        datasets: [
+          {
+            data: filteredData.map((item) => item.value),
+            backgroundColor: filteredData.map((item) => item.color),
+            borderColor: '#ffffff',
+            borderWidth: 4,
+            hoverOffset: 8,
+          },
+        ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '68%',
-        animation: { animateRotate: true, duration: 900 },
+        cutout: '69%',
+        animation: { duration: 900 },
         plugins: {
           legend: { display: false },
           tooltip: {
-            ...TT,
+            backgroundColor: '#153838',
+            titleColor: '#ffffff',
+            bodyColor: '#d7f2ef',
+            padding: 12,
+            displayColors: false,
             callbacks: {
-              label: (c: { label: string; raw: unknown }) => ` ${c.label}: ${c.raw}%`,
+              label: (context: { dataIndex: number }) => {
+                const item = filteredData[context.dataIndex]
+                return `${item.label}: ${formatNumber(item.value)} (${item.percentage})`
+              },
             },
           },
         },
-        onClick: (_: unknown, elements: { index: number }[]) => {
-          if (elements.length > 0) {
-            const i = elements[0].index
-            handleSetActive(activeIdx === i ? null : i)
+        onHover: (_: unknown, elements: { index: number }[]) => {
+          const nextIndex = elements.length > 0 ? elements[0].index : null
+          if (nextIndex !== activeIndex) {
+            setActiveIndex(nextIndex)
           }
+        },
+        onClick: (_: unknown, elements: { index: number }[]) => {
+          if (elements.length === 0) {
+            setActiveIndex(null)
+            return
+          }
+          const clicked = elements[0].index
+          setActiveIndex((current) => (current === clicked ? null : clicked))
         },
       },
     })
   }
 
   useChartJs(buildChart)
-  useEffect(() => () => { chartRef.current?.destroy() }, [])
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.Chart) {
+      buildChart()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedIds])
+
+  useEffect(() => {
+    syncColors(displayActiveIndex)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayActiveIndex, selectedIds])
+
+  useEffect(() => () => chartRef.current?.destroy(), [])
 
   return (
-    <Card
-      title="Status DLI INEY 6.1"
-      description="Menyajikan informasi dan memantauan terkini terkait status pencapaian DLI pada platform INEY 6.1."
-      footer={
-        <Legend
-          items={DLI_DATA.map(d => ({ color: d.color, label: `${d.label} (${d.value}%)` }))}
-          activeIndex={activeIdx}
-          onClick={handleSetActive}
-        />
-      }
+    <SectionCard
+      title="Ringkasan Faskes Secara Nasional"
+      description="Ringkasan ini menampilkan proporsi fasilitas kesehatan secara nasional per jenis layanan. Gunakan daftar di samping untuk menyorot atau memfilter kategori pada chart."
     >
-      <div className="relative flex-1 min-h-[220px]">
-        <canvas
-          ref={canvasRef}
-          role="img"
-          aria-label="Donut chart status DLI INEY 6.1"
-          style={{ cursor: 'pointer' }}
-        />
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          {centerLabel ? (
-            <>
-              <span className="text-[26px] font-bold text-[#0f8f96] leading-none">
-                {centerLabel.value}
-              </span>
-              <span className="text-[12px] text-[#7a9a9a] mt-1 text-center max-w-[80px] leading-tight">
-                {centerLabel.label}
-              </span>
-            </>
-          ) : (
-            <>
-              <span className="text-[12px] text-[#aac5c5] font-medium">Total</span>
-              <span className="text-[24px] font-bold text-[#1a2e2e]">100%</span>
-            </>
-          )}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(260px,320px)_minmax(0,1fr)] lg:items-center">
+        <div className="relative mx-auto h-[280px] w-full max-w-[320px]">
+          <canvas
+            ref={canvasRef}
+            aria-label="Ringkasan Faskes Secara Nasional"
+            role="img"
+          />
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+            <span className="text-[14px] font-semibold uppercase tracking-[0.2em] text-[#516b6b]">
+              {isAllActive ? 'Total' : `${selectedIds.length} Jenis Aktif`}
+            </span>
+            <span className="mt-2 text-[34px] font-bold leading-none text-[#1d2f2f] sm:text-[42px]">
+              {formatNumber(totalValue)}
+            </span>
+            <span className="mt-2 text-[15px] font-bold uppercase tracking-[0.12em] text-[#2c5756]">
+              {isAllActive ? 'Faskes' : 'Faskes'}
+            </span>
+          </div>
+        </div>
+
+        <div className="grid gap-3">
+          {FASKES_DATA.map((item, index) => {
+            const isSelected = selectedIds.includes(item.id)
+            const isMuted = !isSelected
+            return (
+              <button
+                key={item.label}
+                type="button"
+                onMouseEnter={() => {
+                  if (isAllActive) setActiveIndex(index)
+                }}
+                onMouseLeave={() => {
+                  if (isAllActive) setActiveIndex(null)
+                }}
+                onClick={() => toggleSelection(item.id)}
+                className={`flex items-center justify-between rounded-[14px] border px-4 py-3 text-left transition ${
+                  isMuted ? 'opacity-45' : 'opacity-100'
+                }`}
+                style={{
+                  borderColor: isSelected ? fadeColor(item.color, 0.42) : '#d9e9e8',
+                  background: isSelected ? fadeColor(item.color, 0.08) : '#ffffff',
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <span
+                    className="h-3.5 w-3.5 rounded-full"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <div>
+                    <p className="text-[14px] font-semibold text-[#233737]">{item.label}</p>
+                    <p className="text-[12px] text-[#668484]">{item.percentage}</p>
+                  </div>
+                </div>
+                <span className="text-[16px] font-bold text-[#163434]">
+                  {formatNumber(item.value)}
+                </span>
+              </button>
+            )
+          })}
         </div>
       </div>
-    </Card>
+    </SectionCard>
   )
 }
 
-// ─── Card 2: Stacked Bar ──────────────────────────────────────────────────────
-
-const PROVINSI_COLORS = ['#1dc7bf', '#4d90d0', '#fbbf24', '#c9dcdc']
-const PROVINSI_LABELS = ['Siap Penuh', 'Siap Parsial', 'Belum Siap', 'Perlu Validasi']
-
-const PROVINSI_BASE_COLORS = ['#1dc7bf', '#4d90d0', '#fbbf24', '#c9dcdc']
-
-function CapaianProvinsiCard() {
+function SebaranJenisFaskesCard({
+  selectedIds,
+}: {
+  selectedIds: FacilityFilter[]
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const chartRef = useRef<ChartInstance | null>(null)
-  const [activeIdx, setActiveIdx] = useState<number | null>(null)
-  const activeIdxRef = useRef<number | null>(null)
+  const filteredData = getSelectedData(selectedIds)
+  const isAllActive = selectedIds.length === FASKES_DATA.length
 
-  const applyBarHighlight = (idx: number | null) => {
-    const chart = chartRef.current as unknown as {
-      data: { datasets: { backgroundColor: string }[] }
-      update: (mode?: string) => void
-    }
-    if (!chart) return
-    chart.data.datasets.forEach((ds, i) => {
-      ds.backgroundColor = idx === null || i === idx
-        ? PROVINSI_BASE_COLORS[i]
-        : hexFade(PROVINSI_BASE_COLORS[i], 0.15)
-    })
-    chart.update('none')
-  }
-
-  const handleBarClick = (idx: number | null) => {
-    const next = activeIdxRef.current === idx ? null : idx
-    activeIdxRef.current = next
-    setActiveIdx(next)
-    applyBarHighlight(next)
-  }
-
-  useChartJs(() => {
+  const buildChart = () => {
     if (!canvasRef.current || !window.Chart) return
     chartRef.current?.destroy()
+
+    const valueLabelsPlugin = {
+      id: 'valueLabelsPlugin',
+      afterDatasetsDraw(chart: {
+        ctx: CanvasRenderingContext2D
+        data: { datasets: { data: number[] }[] }
+        getDatasetMeta: (datasetIndex: number) => {
+          data: Array<{ x: number; y: number; base: number }>
+        }
+      }) {
+        const { ctx } = chart
+        const meta = chart.getDatasetMeta(0)
+        ctx.save()
+        ctx.font = '700 11px Arial'
+        ctx.fillStyle = '#ffffff'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.18)'
+        ctx.shadowBlur = 6
+
+        filteredData.forEach((item, index) => {
+          const bar = meta.data[index]
+          if (!bar) return
+
+          const labelY = (bar.base + bar.y) / 2
+          ctx.fillText(formatNumber(item.value), bar.x, labelY)
+        })
+
+        ctx.restore()
+      },
+    }
+
     chartRef.current = new window.Chart(canvasRef.current, {
       type: 'bar',
       data: {
-        labels: ['Jawa Barat', 'Jawa Tengah', 'Jawa Timur'],
+        labels: filteredData.map((item) =>
+          item.id === 'bbkk' ? ['BBKK/', 'BKK/LKK'] : item.shortLabel
+        ),
         datasets: [
-          { label: 'Siap Penuh',     data: [42, 38, 55], backgroundColor: '#1dc7bf' },
-          { label: 'Siap Parsial',   data: [28, 32, 22], backgroundColor: '#4d90d0' },
-          { label: 'Belum Siap',     data: [20, 18, 15], backgroundColor: '#fbbf24' },
-          { label: 'Perlu Validasi', data: [10, 12,  8], backgroundColor: '#c9dcdc' },
+          {
+            data: filteredData.map((item) => item.value),
+            backgroundColor: filteredData.map((item) => item.color),
+            borderRadius: 10,
+            borderSkipped: false,
+            barPercentage: 0.72,
+            categoryPercentage: filteredData.length === 1 ? 0.46 : 0.76,
+            minBarLength: 22,
+          },
         ],
       },
       options: {
@@ -342,253 +349,94 @@ function CapaianProvinsiCard() {
         plugins: {
           legend: { display: false },
           tooltip: {
-            ...TT,
+            backgroundColor: '#153838',
+            titleColor: '#ffffff',
+            bodyColor: '#d7f2ef',
+            padding: 12,
+            displayColors: false,
             callbacks: {
-              label: (c: { dataset: { label: string }; raw: unknown }) =>
-                ` ${c.dataset.label}: ${c.raw}%`,
+              label: (context: { dataIndex: number }) => {
+                const item = filteredData[context.dataIndex]
+                return `${formatNumber(item.value)} faskes (${item.percentage})`
+              },
             },
           },
         },
-        onClick: (_: unknown, elements: { datasetIndex: number }[]) => {
-          if (elements.length > 0) {
-            handleBarClick(elements[0].datasetIndex)
-          }
-        },
         scales: {
           x: {
-            stacked: true,
             grid: { display: false },
             border: { display: false },
-            ticks: { font: { size: 12 }, color: '#7a9a9a' },
+            ticks: {
+              color: '#425d5d',
+              font: { size: 12, weight: '600' },
+              maxRotation: 0,
+              minRotation: 0,
+            },
           },
           y: {
-            stacked: true,
-            max: 100,
-            grid: { color: 'rgba(0,0,0,0.04)', lineWidth: 1 },
+            beginAtZero: true,
+            suggestedMax: isAllActive
+              ? 300000
+              : Math.max(filteredData[0].value * 1.2, 1000),
+            grid: { color: 'rgba(24, 128, 132, 0.10)' },
             border: { display: false },
             ticks: {
-              callback: (v: unknown) => `${v}%`,
+              stepSize: isAllActive
+                ? 100000
+                : Math.max(1, Math.ceil(filteredData[0].value / 4 / 1000) * 1000),
+              color: '#6e8b8a',
               font: { size: 12 },
-              color: '#7a9a9a',
-              stepSize: 20,
+              callback: (value: string | number) => {
+                if (Number(value) === 0) return '0'
+                if (!isAllActive && Number(value) < 1000) return formatNumber(Number(value))
+                return `${Math.round(Number(value) / 1000)} RB`
+              },
             },
           },
         },
       },
+      plugins: [valueLabelsPlugin],
     })
-  })
+  }
 
-  useEffect(() => () => { chartRef.current?.destroy() }, [])
+  useChartJs(buildChart)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.Chart) {
+      buildChart()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedIds])
+  useEffect(() => () => chartRef.current?.destroy(), [])
 
   return (
-    <Card
-      title="Capaian Per Provinsi"
-      description="Menyajikan rincian data dan perbandingan progres pencapaian target program secara spesifik untuk masing-masing provinsi."
-      footer={
-        <Legend
-          items={PROVINSI_LABELS.map((l, i) => ({ color: PROVINSI_COLORS[i], label: l }))}
-          activeIndex={activeIdx}
-          onClick={handleBarClick}
-        />
-      }
+    <SectionCard
+      title="Grafik Sebaran Per Jenis Faskes"
+      description="Grafik batang ini memperlihatkan perbandingan jumlah faskes pada setiap jenis layanan. Nilai pada sumbu vertikal menampilkan volume fasilitas untuk memudahkan analisis kategori tertinggi dan terendah."
     >
-      <div className="flex-1 min-h-[220px] relative">
-        <canvas
-          ref={canvasRef}
-          role="img"
-          aria-label="Stacked bar chart capaian per provinsi"
-          style={{ cursor: 'pointer' }}
-        />
-      </div>
-    </Card>
-  )
-}
-
-// ─── Card 3: Horizontal Bar ───────────────────────────────────────────────────
-
-function TopGapAlatCard() {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const chartRef = useRef<ChartInstance | null>(null)
-
-  useChartJs(() => {
-    if (!canvasRef.current || !window.Chart) return
-    chartRef.current?.destroy()
-    chartRef.current = new window.Chart(canvasRef.current, {
-      type: 'bar',
-      data: {
-        labels: ['Timbangan Bayi', 'Infant Warmer', 'HB Meter', 'Stadiometer', 'Nebulizer'],
-        datasets: [{
-          data: [3200, 2900, 2400, 2100, 1800],
-          backgroundColor: [
-            'rgba(29,199,191,0.92)',
-            'rgba(29,199,191,0.76)',
-            'rgba(29,199,191,0.62)',
-            'rgba(29,199,191,0.50)',
-            'rgba(29,199,191,0.38)',
-          ],
-          borderRadius: 6,
-          borderSkipped: false,
-        }],
-      },
-      options: {
-        indexAxis: 'y',
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: { duration: 900 },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            ...TT,
-            callbacks: {
-              label: (c: { raw: unknown }) => ` Kekurangan: ${Number(c.raw).toLocaleString('id-ID')} unit`,
-            },
-          },
-        },
-        scales: {
-          x: {
-            grid: { color: 'rgba(0,0,0,0.04)' },
-            border: { display: false },
-            ticks: { font: { size: 12 }, color: '#7a9a9a' },
-          },
-          y: {
-            grid: { display: false },
-            border: { display: false },
-            ticks: { font: { size: 12 }, color: '#4a6a6a' },
-          },
-        },
-      },
-    })
-  })
-
-  useEffect(() => () => { chartRef.current?.destroy() }, [])
-
-  return (
-    <Card
-      title="Top Gap Alat Kesehatan"
-      description="Menampilkan daftar wilayah dengan tingkat kekurangan alat kesehatan terbesar untuk diprioritaskan."
-    >
-      <div className="flex-1 min-h-[260px] relative">
-        <canvas
-          ref={canvasRef}
-          role="img"
-          aria-label="Horizontal bar chart top gap alat kesehatan"
-        />
-      </div>
-    </Card>
-  )
-}
-
-// ─── Card 4: Radar ────────────────────────────────────────────────────────────
-
-const RADAR_DATA = [
-  { label: 'Ibu',     value: 78 },
-  { label: 'BBL',     value: 65 },
-  { label: 'Anak',    value: 82 },
-  { label: 'Remaja',  value: 55 },
-  { label: 'Gizi',    value: 70 },
-]
-
-function KesiapanLayananCard() {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const chartRef = useRef<ChartInstance | null>(null)
-
-  useChartJs(() => {
-    if (!canvasRef.current || !window.Chart) return
-    chartRef.current?.destroy()
-    chartRef.current = new window.Chart(canvasRef.current, {
-      type: 'radar',
-      data: {
-        labels: RADAR_DATA.map(d => d.label),
-        datasets: [{
-          label: 'Kesiapan (%)',
-          data: RADAR_DATA.map(d => d.value),
-          backgroundColor: 'rgba(29,199,191,0.10)',
-          borderColor: '#1dc7bf',
-          borderWidth: 2,
-          pointBackgroundColor: '#fff',
-          pointBorderColor: '#1dc7bf',
-          pointBorderWidth: 2,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          pointHoverBackgroundColor: '#1dc7bf',
-        }],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: { duration: 900 },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            ...TT,
-            callbacks: {
-              label: (c: { raw: unknown }) => ` Kesiapan: ${c.raw}%`,
-            },
-          },
-        },
-        scales: {
-          r: {
-            min: 0,
-            max: 100,
-            ticks: {
-              stepSize: 25,
-              font: { size: 9 },
-              backdropColor: 'transparent',
-              color: '#aac5c5',
-            },
-            grid: { color: 'rgba(29,199,191,0.12)' },
-            angleLines: { color: 'rgba(29,199,191,0.15)' },
-            pointLabels: { font: { size: 11, weight: '600' }, color: '#4a6a6a' },
-          },
-        },
-      },
-    })
-  })
-
-  useEffect(() => () => { chartRef.current?.destroy() }, [])
-
-  return (
-    <Card
-      title="Kesiapan Layanan"
-      description="Menampilkan status kesiapan fasilitas kesehatan dalam menyelenggarakan pelayanan standar kepada masyarakat."
-      footer={
-        <div className="grid grid-cols-2 gap-1.5">
-          {RADAR_DATA.map(d => (
-            <div key={d.label} className="flex items-center justify-between bg-[#f5fbfb] rounded-lg px-2.5 py-1.5">
-              <span className="text-[10px] text-[#7a9a9a] font-medium">{d.label}</span>
-              <span
-                className="text-[11px] font-bold"
-                style={{ color: d.value >= 75 ? '#0f8f96' : d.value >= 60 ? '#f59e0b' : '#ef4444' }}
-              >
-                {d.value}%
-              </span>
-            </div>
-          ))}
+      <div className="rounded-[16px] border border-[#e3f1f0] bg-[linear-gradient(180deg,#fcffff_0%,#f5fbfb_100%)] p-3 sm:p-4">
+        <div className="h-[340px] sm:h-[380px]">
+          <canvas
+            ref={canvasRef}
+            aria-label="Grafik Sebaran Per Jenis Faskes"
+            role="img"
+          />
         </div>
-      }
-    >
-      <div className="flex-1 min-h-[200px] relative">
-        <canvas
-          ref={canvasRef}
-          role="img"
-          aria-label="Radar chart kesiapan layanan"
-        />
       </div>
-    </Card>
+    </SectionCard>
   )
 }
-
-// ─── Section Export ───────────────────────────────────────────────────────────
 
 export default function ChartCardsSection() {
+  const [selectedIds, setSelectedIds] = useState<FacilityFilter[]>(
+    FASKES_DATA.map((item) => item.id)
+  )
+
   return (
-    <section className="w-full bg-[#f4fafa] py-6 border-t border-[#e0eeee]">
+    <section className="w-full border-t border-[#e0eeee] bg-[#f4fafa] py-6">
       <div className="w-full px-4 sm:px-5 lg:px-6">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <DliStatusCard />
-          <CapaianProvinsiCard />
-          <TopGapAlatCard />
-          <KesiapanLayananCard />
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <RingkasanFaskesCard selectedIds={selectedIds} onSelectionChange={setSelectedIds} />
+          <SebaranJenisFaskesCard selectedIds={selectedIds} />
         </div>
       </div>
     </section>

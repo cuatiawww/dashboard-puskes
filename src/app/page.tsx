@@ -7,6 +7,10 @@ import {
   ChevronUp,
   HeartPulse,
   Stethoscope,
+  LayoutDashboard,
+  Building,
+  HousePlus,
+  ShieldPlus,
   FileText,
   Sparkles,
   Download,
@@ -25,21 +29,51 @@ const assets = {
 }
 
 const summaryCards = [
-  { id: 'total-faskes', facility: 'all', title: 'TOTAL FASILITAS KESEHATAN', value: '10.123', icon: '/faskes.svg' },
   { id: 'total-rs', facility: 'rumahSakit', title: 'TOTAL RUMAH SAKIT', value: '3.123', icon: '/rumah%20sakit.svg' },
   { id: 'total-puskesmas', facility: 'puskesmas', title: 'TOTAL PUSKESMAS', value: '5.123', icon: '/puskesmas.svg' },
+  { id: 'total-pustu', facility: 'pustu', title: 'TOTAL PUSTU', value: '1.423', icon: '/puskesmas.svg' },
+  { id: 'total-klinik', facility: 'klinik', title: 'TOTAL KLINIK', value: '2.876', icon: '/rumah%20sakit.svg' },
   { id: 'total-posyandu', facility: 'posyandu', title: 'TOTAL POSYANDU', value: '2.123', icon: '/posyandu.svg' },
+  { id: 'total-bbkk', facility: 'bbkk', title: 'TOTAL BBKK/BKK/LKK', value: '512', icon: '/faskes.svg' },
 ] as const
 
+function formatWibDate(date: Date) {
+  return new Intl.DateTimeFormat('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Asia/Jakarta',
+  }).format(date)
+}
+
+function formatWibTime(date: Date) {
+  return new Intl.DateTimeFormat('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'Asia/Jakarta',
+  }).format(date).replace(':', '.')
+}
+
 export default function HomePage() {
+  type QuickLinkKey = 'dashboard' | 'rumahSakit' | 'puskesmas' | 'pustu' | 'klinik' | 'posyandu' | 'bbkk'
+
+  const [activeQuickLink, setActiveQuickLink] = useState<QuickLinkKey>('dashboard')
   const [activeFacility, setActiveFacility] = useState<FacilityKey>('puskesmas')
   const [aiInsight, setAiInsight] = useState<InsightData | null>(null)
   const [generatingAi, setGeneratingAi] = useState(false)
   const [downloadingInfo, setDownloadingInfo] = useState(false)
+  const [generatedAt] = useState(() => new Date())
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false)
   const [modalTab, setModalTab] = useState<ModalTab>('ringkasan')
+  const wibDateLabel = formatWibDate(generatedAt)
+  const wibTimeLabel = formatWibTime(generatedAt)
+  const dataPerLabel = `${wibDateLabel} ${wibTimeLabel} WIB`
+  const sourceDataLabel = `Data per ${wibDateLabel} - Sumber: Kemenkes RI`
+  const exportDataLabel = `Data per ${wibDateLabel} - Kemenkes RI`
+  const updatedAtLabel = `Diperbarui ${wibDateLabel}, ${wibTimeLabel.replace('.', ':')} WIB`
 
   const openModal = (tab: ModalTab) => {
     setModalTab(tab)
@@ -47,10 +81,27 @@ export default function HomePage() {
   }
 
   const quickLinks = [
+    { key: 'dashboard' as const, label: 'DASHBOARD', icon: LayoutDashboard },
     { key: 'rumahSakit' as const, label: 'RUMAH SAKIT', icon: Building2 },
     { key: 'puskesmas' as const, label: 'PUSKESMAS', icon: Stethoscope },
+    { key: 'pustu' as const, label: 'PUSTU', icon: HousePlus },
+    { key: 'klinik' as const, label: 'KLINIK', icon: Building },
     { key: 'posyandu' as const, label: 'POSYANDU', icon: HeartPulse },
+    { key: 'bbkk' as const, label: 'BBKK/BKK/LKK', icon: ShieldPlus },
   ]
+
+  const handleQuickLinkClick = (key: QuickLinkKey) => {
+    setActiveQuickLink(key)
+    if (key === 'dashboard') {
+      setActiveFacility('puskesmas')
+      return
+    }
+    if (key === 'rumahSakit' || key === 'puskesmas' || key === 'pustu' || key === 'klinik' || key === 'posyandu') {
+      setActiveFacility(key)
+      return
+    }
+    setActiveFacility('bbkk')
+  }
 
   const generateAiInsight = async () => {
     if (generatingAi) return
@@ -117,14 +168,14 @@ export default function HomePage() {
       container.style.width = '1080px'
       container.style.background = 'linear-gradient(180deg,#ecfbfb 0%,#dff5f4 100%)'
       container.style.padding = '44px'
-      container.style.fontFamily = 'Inter, Arial, sans-serif'
+      container.style.fontFamily = 'Manrope, Arial, sans-serif'
       container.style.color = '#163e3e'
       container.innerHTML = `
         <div style="background:#ffffff;border:2px solid #bfe4e2;border-radius:24px;padding:28px;box-shadow:0 14px 36px rgba(15,143,150,.14);">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;">
             <div>
               <div style="font-size:31px;font-weight:800;line-height:1.2;">AI Insight - Kinerja Fasilitas Kesehatan</div>
-              <div style="font-size:15px;color:#4d7676;margin-top:5px;">Data per 11 Mei 2026 - Kemenkes RI</div>
+              <div style="font-size:15px;color:#4d7676;margin-top:5px;">${exportDataLabel}</div>
             </div>
             <div style="font-size:12px;color:#0f8f96;background:#e6f7f6;padding:6px 10px;border-radius:999px;font-weight:700;">Generated</div>
           </div>
@@ -166,56 +217,58 @@ export default function HomePage() {
 
   const insightPreviewText =
     aiInsight?.summary ??
-    'GAP terbesar nasional berada pada alat kesehatan, layanan anak, dan ketersediaan tenaga gizi di wilayah terpencil.'
+    'Berada pada alat kesehatan, layanan anak, dan ketersediaan tenaga gizi di wilayah terpencil.'
 
   return (
     <div className="min-h-screen bg-[#fbffff] text-slate-800">
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <section className="w-full">
-        <div className="relative overflow-hidden border-y border-[#cfeeed] bg-[#eefdfd]">
+        <div className="relative overflow-x-visible overflow-y-hidden border-y border-[#cfeeed] bg-[#eefdfd]">
           <div
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
             style={{ backgroundImage: `url('${assets.headerBackground}')` }}
           />
           <div className="absolute inset-0 bg-[rgba(245,255,255,0.34)]" />
 
-          <div className="relative flex min-h-[219px] w-full flex-row gap-4 px-4 py-4 sm:gap-5 sm:px-5 sm:py-6 lg:items-center lg:justify-between lg:px-6 lg:py-7">
-            <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-5">
-              <div className="flex h-[70px] w-[190px] flex-shrink-0 items-center justify-start sm:h-[108px] sm:w-[302px]">
+          <div className="relative flex min-h-[219px] w-full flex-col gap-4 px-4 py-4 sm:gap-5 sm:px-5 sm:py-6 lg:px-6 lg:py-7">
+            <div className="flex flex-col items-center justify-center gap-3">
+              <div className="flex h-[58px] w-[160px] flex-shrink-0 items-center justify-center sm:h-[84px] sm:w-[238px]">
                 <Image
                   src={assets.logo}
                   alt="Logo Kemenkes"
-                  width={302}
-                  height={108}
-                  className="h-[70px] w-auto sm:h-[108px]"
+                  width={238}
+                  height={84}
+                  className="h-[58px] w-auto sm:h-[84px]"
                   priority
                 />
               </div>
 
-              <div className="max-w-[529px]">
-                <h1 className="text-[12px] font-bold uppercase leading-[1.45] text-[#008c95] sm:text-[24px] lg:text-[30px] lg:leading-[48px]">
-                  <span className="block">Dashboard Indikator Penilaian</span>
-                  <span className="block">Kinerja Fasilitas Kesehatan</span>
+              <div className="w-full text-center">
+                <h1 className="text-[24px] font-black uppercase leading-[1.25] tracking-[-0.02em] text-[#008c95] sm:text-[30px] lg:text-[40px] lg:leading-[1.2]">
+                  <span className="hidden whitespace-nowrap lg:inline">
+                    Dashboard Indikator Penilaian Kinerja Fasilitas Kesehatan
+                  </span>
+                  <span className="lg:hidden">Dashboard Indikator Penilaian Kinerja Fasilitas Kesehatan</span>
                 </h1>
               </div>
             </div>
 
-            <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center lg:justify-end">
+            <div className="-mx-1 flex w-full items-center gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:mx-0 lg:justify-center lg:px-0">
               {quickLinks.map((item) => (
                 <button
                   key={item.label}
                   type="button"
-                  onClick={() => setActiveFacility(item.key)}
-                  className={`inline-flex items-center justify-center gap-2 rounded-[16px] px-3 py-2 text-[10px] font-bold tracking-[0.09em] uppercase transition-all sm:justify-start sm:gap-3 sm:rounded-[18px] sm:px-5 sm:py-2.5 sm:text-[11px] sm:tracking-[0.12em] ${
-                    item.key === activeFacility
-                      ? 'border border-[#10b9b4] bg-[#1dc7bf] text-white shadow-[0_12px_26px_rgba(29,199,191,0.28)]'
-                      : 'border border-[#d5eceb] bg-white/90 text-[#3f5a5a] hover:-translate-y-0.5 hover:border-[#9fdedb] hover:bg-[#f7fcfc] hover:text-[#0f8f96]'
+                  onClick={() => handleQuickLinkClick(item.key)}
+                  className={`inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-[16px] px-3.5 py-2 text-[14px] font-bold tracking-[0.08em] uppercase transition-all sm:gap-3 sm:rounded-[18px] sm:px-5 sm:py-2.5 sm:text-[15px] sm:tracking-[0.11em] ${
+                    item.key === activeQuickLink
+                      ? 'border border-[#10b9b4] bg-[#1dc7bf] text-white shadow-[0_10px_24px_rgba(29,199,191,0.24)]'
+                      : 'border border-[#cfe4e3] bg-white/95 text-[#3f5a5a] hover:-translate-y-0.5 hover:border-[#9fdedb] hover:bg-[#f7fcfc] hover:text-[#0f8f96]'
                   }`}
                 >
                   <span
-                    className={`flex h-7 w-7 items-center justify-center rounded-full ${
-                      item.key === activeFacility ? 'bg-white/20' : 'bg-[#eef7f7]'
+                    className={`flex h-7 w-7 items-center justify-center rounded-full border ${
+                      item.key === activeQuickLink ? 'border-white/20 bg-white/20' : 'border-[#dbeaea] bg-[#eef7f7]'
                     }`}
                   >
                     <item.icon className="h-4 w-4" />
@@ -233,7 +286,7 @@ export default function HomePage() {
         <div className="w-full px-4 sm:px-5 lg:px-6">
           <FilterDropdownBar />
 
-          <div className="mt-2.5 grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-2.5 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             {summaryCards.map((card) => (
               <article
                 key={card.id}
@@ -301,14 +354,17 @@ export default function HomePage() {
                     height={52}
                     className="h-13 w-13 flex-shrink-0"
                   />
-                  <h3 className="text-[15px] font-bold leading-[1.3] text-[#1a3535] sm:text-[17px]">
-                    Analisis Penilaian Indikator Kinerja Fasilitas Kesehatan
+                  <h3 className="text-[15px] font-extrabold uppercase leading-[1.22] text-[#1a3535] sm:text-[17px]">
+                    ANALISIS PENILAIAN INDIKATOR SECARA NASIONAL
                   </h3>
                 </div>
 
                 {/* Body text */}
-                <div className="mt-3 rounded-xl border-l-[3px] border-l-[#16b7b2] bg-white/60 px-3 py-2.5 backdrop-blur-[2px]">
-                  <p className="text-[13px] leading-relaxed text-[#2f4040] sm:text-[14px]">
+                <div className="mt-4 rounded-xl border-l-[4px] border-l-[#16b7b2] bg-white/68 px-3.5 py-3 backdrop-blur-[2px]">
+                  <p className="text-[14px] font-extrabold uppercase leading-tight text-[#0f6e73] sm:text-[16px]">
+                    GAP TERBESAR NASIONAL
+                  </p>
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-[#2f4040] sm:text-[14px]">
                     {insightPreviewText}
                   </p>
                 </div>
@@ -317,46 +373,46 @@ export default function HomePage() {
                 <div className="my-4 h-px bg-[rgba(0,0,0,0.08)]" />
 
                 {/* ── Action Buttons (IMPROVED) ────────────────────────── */}
-                <div className="mt-auto grid grid-cols-3 gap-2">
-
-                  {/* Detail */}
-                  <button
-                    onClick={() => openModal('ringkasan')}
-                    disabled={!aiInsight}
-                    className="group flex flex-col items-center gap-2 rounded-[14px] bg-[#0f8f96] px-2 py-3 text-white shadow-[0_4px_14px_rgba(15,143,150,0.32)] transition-all hover:-translate-y-0.5 hover:bg-[#0c7a80] hover:shadow-[0_6px_20px_rgba(15,143,150,0.42)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-[#0f8f96] disabled:hover:shadow-[0_4px_14px_rgba(15,143,150,0.32)]"
-                  >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 transition-transform group-hover:scale-110">
-                      <FileText className="h-4 w-4" />
-                    </div>
-                    <span className="text-[9px] font-bold uppercase tracking-[0.08em]">
-                      {aiInsight ? 'Detail' : 'Generate Dulu'}
-                    </span>
-                  </button>
-
-                  {/* Generate AI */}
-                  <button
-                    onClick={generateAiInsight}
-                    className="group flex flex-col items-center gap-2 rounded-[14px] bg-gradient-to-br from-[#4d90d0] to-[#6c5ce7] px-2 py-3 text-white shadow-[0_4px_14px_rgba(77,144,208,0.32)] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(108,92,231,0.42)] active:scale-95"
-                  >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 transition-transform group-hover:scale-110">
-                      {generatingAi ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    </div>
-                    <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-center leading-tight">
-                      {generatingAi ? 'Loading...' : 'Generate AI'}
-                    </span>
-                  </button>
+                <div className="mt-auto grid grid-cols-3 gap-2.5">
 
                   {/* Download */}
                   <button
                     onClick={downloadAiInfografis}
-                    className="group flex flex-col items-center gap-2 rounded-[14px] bg-[#16b7b2] px-2 py-3 text-white shadow-[0_4px_14px_rgba(22,183,178,0.32)] transition-all hover:-translate-y-0.5 hover:bg-[#10a09c] hover:shadow-[0_6px_20px_rgba(22,183,178,0.42)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="group flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-[14px] bg-[#16b7b2] px-2 py-3 text-white shadow-[0_4px_14px_rgba(22,183,178,0.32)] transition-all hover:-translate-y-0.5 hover:bg-[#10a09c] hover:shadow-[0_6px_20px_rgba(22,183,178,0.42)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
                     disabled={!aiInsight || downloadingInfo}
                   >
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 transition-transform group-hover:scale-110">
                       {downloadingInfo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                     </div>
-                    <span className="text-[9px] font-bold uppercase tracking-[0.08em]">
+                    <span className="text-center text-[10px] font-extrabold uppercase leading-tight tracking-[0.04em] sm:text-[11px]">
                       {downloadingInfo ? 'Proses...' : 'Download'}
+                    </span>
+                  </button>
+
+                  {/* Rekomendasi AI */}
+                  <button
+                    onClick={generateAiInsight}
+                    className="group flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-[14px] bg-gradient-to-br from-[#5067d8] to-[#7c4dff] px-2 py-3 text-white shadow-[0_4px_14px_rgba(80,103,216,0.32)] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(124,77,255,0.42)] active:scale-95"
+                  >
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 transition-transform group-hover:scale-110">
+                      {generatingAi ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    </div>
+                    <span className="text-center text-[10px] font-extrabold uppercase leading-tight tracking-[0.04em] sm:text-[11px]">
+                      {generatingAi ? 'Loading...' : 'Rekomendasi AI'}
+                    </span>
+                  </button>
+
+                  {/* Detail */}
+                  <button
+                    onClick={() => openModal('ringkasan')}
+                    disabled={!aiInsight}
+                    className="group flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-[14px] bg-[#f59e0b] px-2 py-3 text-white shadow-[0_4px_14px_rgba(245,158,11,0.34)] transition-all hover:-translate-y-0.5 hover:bg-[#d97706] hover:shadow-[0_6px_20px_rgba(245,158,11,0.44)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-[#f59e0b] disabled:hover:shadow-[0_4px_14px_rgba(245,158,11,0.34)]"
+                  >
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 transition-transform group-hover:scale-110">
+                      <FileText className="h-4 w-4" />
+                    </div>
+                    <span className="text-center text-[10px] font-extrabold uppercase leading-tight tracking-[0.04em] sm:text-[11px]">
+                      Detail
                     </span>
                   </button>
                 </div>
@@ -378,7 +434,7 @@ export default function HomePage() {
                 Kementerian Kesehatan Republik Indonesia
               </p>
               <h4 className="mt-4 text-[18px] font-bold text-[#2f3a3a] sm:text-[22px]">Data per:</h4>
-              <p className="mt-1 text-[14px] text-[#3f4a4a] sm:text-[16px]">11 Mei 2026 10.00 WIB</p>
+              <p className="mt-1 text-[14px] text-[#3f4a4a] sm:text-[16px]">{dataPerLabel}</p>
             </article>
           </div>
 
@@ -393,11 +449,10 @@ export default function HomePage() {
             }}
           >
             <h3 className="text-[22px] font-bold leading-tight text-[#2f2f2f] sm:text-[30px]">
-              SEBARAN SPASIAL STATUS FASILITAS KESEHATAN NASIONAL
+              KEPADATAN / JUMLAH TOTAL FASKES
             </h3>
             <p className="mt-1 text-[14px] leading-relaxed text-[#4b4b4b] sm:text-[16px]">
-              Pemetaan ini menyajikan gambaran komprehensif mengenai distribusi geografis dan
-              klasifikasi status Fasilitas Kesehatan di seluruh wilayah Indonesia.
+              Pemetaan ini menyajikan gambaran komprehensif mengenai distribusi geografis dan klasifikasi status Fasilitas Kesehatan di seluruh wilayah Indonesia.
             </p>
             <div className="mt-4 h-[300px] sm:h-[350px] md:h-[420px] xl:h-[470px]">
               <IndonesiaStatusMapClient />
@@ -416,6 +471,8 @@ export default function HomePage() {
         open={modalOpen}
         defaultTab={modalTab}
         aiInsight={aiInsight}
+        sourceDataLabel={sourceDataLabel}
+        updatedAtLabel={updatedAtLabel}
         onClose={() => setModalOpen(false)}
       />
     </div>
