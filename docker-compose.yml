@@ -19,7 +19,7 @@ services:
 
 volumes:
   modules_dashboardfaskes:
-    driver:local
+    driver: local
 
 networks:
   proxy:
