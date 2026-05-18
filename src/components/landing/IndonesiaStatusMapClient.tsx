@@ -226,18 +226,18 @@ export default function IndonesiaStatusMapClient() {
       : 0
 
   return (
-    <div className="relative h-full min-h-[510px] w-full overflow-hidden rounded-2xl border border-[#cde9e8] bg-transparent">
+    <div className="relative h-full min-h-[320px] w-full overflow-hidden rounded-2xl border border-[#cde9e8] bg-transparent sm:min-h-[510px]">
       <div ref={mapRef} className="h-full w-full" />
 
       {/* Legend choropleth */}
-      <div className="absolute bottom-5 left-5 min-w-[200px] rounded-2xl border border-[#bfe3e2] bg-[#f3fffe]/95 p-4 shadow-[0_10px_30px_rgba(9,88,89,0.15)]">
-        <p className="mb-1 text-[12px] font-bold uppercase tracking-wide text-[#2a4040]">
+      <div className="absolute bottom-1.5 left-1.5 max-w-[68%] rounded-lg border border-[#bfe3e2] bg-[#f3fffe]/95 p-2 shadow-[0_8px_18px_rgba(9,88,89,0.1)] sm:bottom-5 sm:left-5 sm:min-w-[200px] sm:max-w-none sm:rounded-2xl sm:p-4 sm:shadow-[0_10px_30px_rgba(9,88,89,0.15)]">
+        <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-[#2a4040] sm:text-[12px]">
           Legenda
         </p>
-        <p className="mb-2 text-[11px] leading-relaxed text-[#4c6363]">
+        <p className="mb-1.5 hidden text-[10px] leading-relaxed text-[#4c6363] sm:mb-2 sm:block sm:text-[11px]">
           Gradasi kepadatan/jumlah total faskes per wilayah
         </p>
-        <ul className="space-y-1.5">
+        <ul className="space-y-1 sm:space-y-1.5">
           {densityOrder.map((item) => {
             const isSelected = activeFilter === item
             const rangeLabel =
@@ -259,26 +259,23 @@ export default function IndonesiaStatusMapClient() {
             return (
               <li
                 key={item}
-                className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-0.5 transition-all hover:bg-[#e9f7f7]"
+                className="flex cursor-pointer items-center gap-1.5 rounded-md px-1 py-0.5 transition-all hover:bg-[#e9f7f7] sm:gap-2"
                 style={{ opacity: activeFilter && !isSelected ? 0.45 : 1 }}
                 onClick={() => setActiveFilter(isSelected ? null : item)}
               >
                 <span
-                  className="inline-block h-3.5 w-3.5 flex-shrink-0 rounded-[3px]"
+                  className="inline-block h-3 w-3 flex-shrink-0 rounded-[3px] sm:h-3.5 sm:w-3.5"
                   style={{
                     backgroundColor: densityColors[item],
                     outline: isSelected ? `2px solid ${densityColors[item]}` : 'none',
                     outlineOffset: '2px',
                   }}
                 />
-                <span
-                  className="text-[13px] font-medium leading-tight"
-                  style={{ color: isSelected ? densityColors[item] : '#3a5050' }}
-                >
+                <span className="text-[11px] font-medium leading-tight sm:text-[13px]" style={{ color: isSelected ? densityColors[item] : '#3a5050' }}>
                   {item} ({rangeLabel})
-                  <span className="block text-[10px] font-normal text-[#6c8585]">
-                    {hintLabel}
-                  </span>
+                </span>
+                <span className="hidden text-[10px] font-normal text-[#6c8585] sm:block">
+                  {hintLabel}
                 </span>
               </li>
             )
@@ -286,10 +283,10 @@ export default function IndonesiaStatusMapClient() {
         </ul>
         {activeFilter && (
           <button
-            className="mt-3 w-full rounded-md border border-[#c8e6e5] bg-white py-1.5 text-[12px] font-semibold text-[#0f8f96] transition-colors hover:bg-[#eef9f9]"
+            className="mt-2 w-full rounded-md border border-[#c8e6e5] bg-white py-1 text-[11px] font-semibold text-[#0f8f96] transition-colors hover:bg-[#eef9f9] sm:mt-3 sm:py-1.5 sm:text-[12px]"
             onClick={() => setActiveFilter(null)}
           >
-            Reset gradasi
+            RESET
           </button>
         )}
       </div>
