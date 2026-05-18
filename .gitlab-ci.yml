@@ -2,8 +2,7 @@ stages:
   - deploy
 
 .deploy_script: &deploy_script
-  - export GOOGLE_AI_API_KEY=${GOOGLE_AI_API_KEY}
-  - docker build -t dashboardfaskes .
+  - docker build --build-arg GOOGLE_AI_API_KEY=${GOOGLE_AI_API_KEY} -t dashboardfaskes .
   - docker compose down || true
   - docker compose up -d
 
