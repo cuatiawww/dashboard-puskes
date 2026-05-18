@@ -41,6 +41,21 @@ export type DashboardSebaranFaskesItem = {
   total_bkk?: string | number
 }
 
+export type DashboardPetaSebaranItem = {
+  kode?: string
+  nama?: string
+  kode_provinsi?: string
+  nama_provinsi?: string
+  total_rs?: string | number
+  total_puskesmas?: string | number
+  total_posyandu?: string | number
+  total_klinik?: string | number
+  total_pustu?: string | number
+  total_bkk?: string | number
+  rasio?: string | number
+  rasio_kepadatan?: string | number
+}
+
 type DashboardApiResponse<T> = {
   data?: T
 }
@@ -74,6 +89,31 @@ async function postDashboardEndpoint<T>(path: string, body: DashboardFaskesFilte
   return (await res.json()) as DashboardApiResponse<T>
 }
 
+async function postDashboardEndpointRaw(path: string, body: DashboardFaskesFilter = {}) {
+  if (!DASHBOARD_FASKES_TOKEN) {
+    throw new Error('DASHBOARD_FASKES_TOKEN belum diatur di environment variable')
+  }
+
+  const res = await fetch(`${normalizeBaseUrl(DASHBOARD_FASKES_BASE_URL)}${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      TTOKEN: DASHBOARD_FASKES_TOKEN,
+    },
+    body: JSON.stringify({
+      kode_provinsi: body.kode_provinsi ?? '',
+      kode_kabupaten: body.kode_kabupaten ?? '',
+    }),
+    cache: 'no-store',
+  })
+
+  if (!res.ok) {
+    throw new Error(`Gagal request ${path}. Status ${res.status}`)
+  }
+
+  return (await res.json()) as unknown
+}
+
 export async function fetchDashboardProvinsi() {
   const response = await postDashboardEndpoint<DashboardProvinsiItem[]>(
     '/dashboard-faskes/provinsi',
@@ -103,4 +143,12 @@ export async function fetchDashboardSebaranFaskes(filter: DashboardFaskesFilter 
     filter,
   )
   return response.data ?? []
+}
+
+export async function fetchDashboardPetaSebaran(filter: DashboardFaskesFilter = {}) {
+  const response = await postDashboardEndpointRaw(
+    '/dashboard-faskes/peta-sebaran',
+    filter,
+  )
+  return response
 }
