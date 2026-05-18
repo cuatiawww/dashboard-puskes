@@ -466,10 +466,10 @@ export default function IndonesiaStatusMapClient({
               </span>
             </p>
             <p className="mt-1 text-[13px] text-[#4a6060]">
-              Rasio faskes (per 100.000 penduduk):{' '}
+              Rasio faskes:{' '}
               <span className="font-semibold text-[#223333]">
                 {selectedProvince.densityValue > 0
-                  ? `${selectedProvince.densityValue.toFixed(2)}`
+                  ? selectedProvince.densityValue.toFixed(2)
                   : 'Data rasio tidak tersedia'}
               </span>
             </p>
@@ -486,9 +486,6 @@ export default function IndonesiaStatusMapClient({
                   ? selectedProvince.population.toLocaleString('id-ID')
                   : 'Data tidak tersedia'}
               </span>
-            </p>
-            <p className="mt-1 text-[12px] text-[#6f8787]">
-              Rumus: (jumlah faskes / jumlah penduduk) × 100.000
             </p>
 
             {/* Gradient bar posisi kepadatan — hanya di card ini */}
@@ -517,3 +514,4 @@ export default function IndonesiaStatusMapClient({
     </div>
   )
 }
+

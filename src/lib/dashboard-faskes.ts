@@ -114,6 +114,31 @@ async function postDashboardEndpointRaw(path: string, body: DashboardFaskesFilte
   return (await res.json()) as unknown
 }
 
+async function postDashboardEndpointWithBody<T>(
+  path: string,
+  body: Record<string, string>,
+) {
+  if (!DASHBOARD_FASKES_TOKEN) {
+    throw new Error('DASHBOARD_FASKES_TOKEN belum diatur di environment variable')
+  }
+
+  const res = await fetch(`${normalizeBaseUrl(DASHBOARD_FASKES_BASE_URL)}${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      TTOKEN: DASHBOARD_FASKES_TOKEN,
+    },
+    body: JSON.stringify(body),
+    cache: 'no-store',
+  })
+
+  if (!res.ok) {
+    throw new Error(`Gagal request ${path}. Status ${res.status}`)
+  }
+
+  return (await res.json()) as DashboardApiResponse<T>
+}
+
 export async function fetchDashboardProvinsi() {
   const response = await postDashboardEndpoint<DashboardProvinsiItem[]>(
     '/dashboard-faskes/provinsi',
@@ -122,9 +147,13 @@ export async function fetchDashboardProvinsi() {
 }
 
 export async function fetchDashboardKabupaten(kodeProvinsi: string) {
-  const response = await postDashboardEndpoint<DashboardKabupatenItem[]>(
+  const response = await postDashboardEndpointWithBody<DashboardKabupatenItem[]>(
     '/dashboard-faskes/kabupaten',
-    { kode_provinsi: kodeProvinsi },
+    {
+      kode_prov: kodeProvinsi,
+      kode_provinsi: kodeProvinsi,
+      kode_kabupaten: '',
+    },
   )
   return response.data ?? []
 }
