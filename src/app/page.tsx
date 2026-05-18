@@ -361,8 +361,8 @@ export default function HomePage() {
 
                 {/* Body text */}
                 <div className="mt-4 rounded-xl border-l-[4px] border-l-[#16b7b2] bg-white/68 px-3.5 py-3 backdrop-blur-[2px]">
-                  <p className="text-[14px] font-extrabold uppercase leading-tight text-[#0f6e73] sm:text-[16px]">
-                    GAP TERBESAR NASIONAL
+                  <p className="text-[18px] font-extrabold leading-tight text-[#0f6e73] sm:text-[20px]">
+                    Gap Terbesar Nasional
                   </p>
                   <p className="mt-1.5 text-[13px] leading-relaxed text-[#2f4040] sm:text-[14px]">
                     {insightPreviewText}
@@ -384,7 +384,7 @@ export default function HomePage() {
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 transition-transform group-hover:scale-110">
                       {downloadingInfo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                     </div>
-                    <span className="text-center text-[10px] font-extrabold uppercase leading-tight tracking-[0.04em] sm:text-[11px]">
+                    <span className="text-center text-[12px] font-extrabold uppercase leading-tight tracking-[0.04em] sm:text-[13px]">
                       {downloadingInfo ? 'Proses...' : 'Download'}
                     </span>
                   </button>
@@ -397,7 +397,7 @@ export default function HomePage() {
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 transition-transform group-hover:scale-110">
                       {generatingAi ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                     </div>
-                    <span className="text-center text-[10px] font-extrabold uppercase leading-tight tracking-[0.04em] sm:text-[11px]">
+                    <span className="text-center text-[12px] font-extrabold uppercase leading-tight tracking-[0.04em] sm:text-[13px]">
                       {generatingAi ? 'Loading...' : 'Rekomendasi AI'}
                     </span>
                   </button>
@@ -411,7 +411,7 @@ export default function HomePage() {
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 transition-transform group-hover:scale-110">
                       <FileText className="h-4 w-4" />
                     </div>
-                    <span className="text-center text-[10px] font-extrabold uppercase leading-tight tracking-[0.04em] sm:text-[11px]">
+                    <span className="text-center text-[12px] font-extrabold uppercase leading-tight tracking-[0.04em] sm:text-[13px]">
                       Detail
                     </span>
                   </button>
