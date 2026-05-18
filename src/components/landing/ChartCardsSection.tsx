@@ -4,6 +4,14 @@ import { useEffect, useRef, useState } from 'react'
 
 type ChartInstance = { destroy: () => void; update: (mode?: string) => void }
 type FacilityFilter = 'rumah-sakit' | 'puskesmas' | 'pustu' | 'klinik' | 'posyandu' | 'bbkk'
+type RekapTotals = {
+  total_rs?: string | number
+  total_puskesmas?: string | number
+  total_pustu?: string | number
+  total_klinik?: string | number
+  total_posyandu?: string | number
+  total_bkk?: string | number
+} | null
 
 declare global {
   interface Window {
@@ -12,13 +20,13 @@ declare global {
   }
 }
 
-const FASKES_DATA = [
-  { id: 'rumah-sakit', label: 'Rumah Sakit', shortLabel: 'Rumah Sakit', value: 2956, percentage: '0,89%', color: '#2f80ed' },
-  { id: 'puskesmas', label: 'Puskesmas', shortLabel: 'Puskesmas', value: 10321, percentage: '3,12%', color: '#4ac97a' },
-  { id: 'pustu', label: 'Pustu', shortLabel: 'Pustu', value: 25147, percentage: '7,61%', color: '#ffa62b' },
-  { id: 'klinik', label: 'Klinik', shortLabel: 'Klinik', value: 9397, percentage: '2,84%', color: '#9b51e0' },
-  { id: 'posyandu', label: 'Posyandu', shortLabel: 'Posyandu', value: 282704, percentage: '85,55%', color: '#f45ca1' },
-  { id: 'bbkk', label: 'BBKK/BKK/LKK', shortLabel: 'BBKK/\nBKK/LKK', value: 132, percentage: '0,04%', color: '#39c6cf' },
+const FASKES_META = [
+  { id: 'rumah-sakit', label: 'Rumah Sakit', shortLabel: 'Rumah Sakit', key: 'total_rs', color: '#2f80ed' },
+  { id: 'puskesmas', label: 'Puskesmas', shortLabel: 'Puskesmas', key: 'total_puskesmas', color: '#4ac97a' },
+  { id: 'pustu', label: 'Pustu', shortLabel: 'Pustu', key: 'total_pustu', color: '#ffa62b' },
+  { id: 'klinik', label: 'Klinik', shortLabel: 'Klinik', key: 'total_klinik', color: '#9b51e0' },
+  { id: 'posyandu', label: 'Posyandu', shortLabel: 'Posyandu', key: 'total_posyandu', color: '#f45ca1' },
+  { id: 'bbkk', label: 'BBKK/BKK/LKK', shortLabel: 'BBKK/\nBKK/LKK', key: 'total_bkk', color: '#39c6cf' },
 ] as const
 
 let chartJsLoaded = false
@@ -61,8 +69,37 @@ function fadeColor(hex: string, opacity: number) {
   return `rgba(${r}, ${g}, ${b}, ${opacity})`
 }
 
-function getSelectedData(selectedIds: FacilityFilter[]) {
-  return FASKES_DATA.filter((item) => selectedIds.includes(item.id))
+function toNumber(value: string | number | undefined) {
+  if (typeof value === 'number') return value
+  const parsed = Number.parseInt((value ?? '0').toString().replace(/[^\d-]/g, ''), 10)
+  return Number.isNaN(parsed) ? 0 : parsed
+}
+
+function buildFaskesData(rekapTotal: RekapTotals) {
+  const rows = FASKES_META.map((item) => ({
+    ...item,
+    value: toNumber(rekapTotal?.[item.key]),
+    percentage: '0,00%',
+  }))
+  const total = rows.reduce((sum, item) => sum + item.value, 0)
+  return rows.map((item) => ({
+    ...item,
+    percentage:
+      total > 0
+        ? `${((item.value / total) * 100).toLocaleString('id-ID', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}%`
+        : '0,00%',
+  }))
+}
+
+function getSelectedData(selectedIds: FacilityFilter[], faskesData: ReturnType<typeof buildFaskesData>) {
+  return faskesData.filter((item) => selectedIds.includes(item.id))
+}
+
+function getDataVersion(faskesData: ReturnType<typeof buildFaskesData>) {
+  return faskesData.map((item) => `${item.id}:${item.value}`).join('|')
 }
 
 function SectionCard({
@@ -103,16 +140,22 @@ function SectionCard({
 function RingkasanFaskesCard({
   selectedIds,
   onSelectionChange,
+  faskesData,
+  loading,
 }: {
   selectedIds: FacilityFilter[]
   onSelectionChange: (selectedIds: FacilityFilter[]) => void
+  faskesData: ReturnType<typeof buildFaskesData>
+  loading: boolean
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const chartRef = useRef<ChartInstance | null>(null)
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
-  const filteredData = getSelectedData(selectedIds)
+  const filteredData = getSelectedData(selectedIds, faskesData)
+  const dataVersion = getDataVersion(faskesData)
+  const selectedIdsVersion = selectedIds.join('|')
   const totalValue = filteredData.map((item) => item.value).reduce((sum, value) => sum + value, 0)
-  const isAllActive = selectedIds.length === FASKES_DATA.length
+  const isAllActive = selectedIds.length === FASKES_META.length
   const displayActiveIndex = isAllActive ? activeIndex : null
 
   const toggleSelection = (id: FacilityFilter) => {
@@ -120,7 +163,7 @@ function RingkasanFaskesCard({
       ? selectedIds.filter((itemId) => itemId !== id)
       : [...selectedIds, id]
 
-    onSelectionChange(nextIds.length === 0 ? FASKES_DATA.map((item) => item.id) : nextIds)
+    onSelectionChange(nextIds.length === 0 ? FASKES_META.map((item) => item.id) : nextIds)
   }
 
   const syncColors = (index: number | null) => {
@@ -200,12 +243,12 @@ function RingkasanFaskesCard({
       buildChart()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedIds])
+  }, [selectedIdsVersion, dataVersion])
 
   useEffect(() => {
     syncColors(displayActiveIndex)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displayActiveIndex, selectedIds])
+  }, [displayActiveIndex, selectedIdsVersion, dataVersion])
 
   useEffect(() => () => chartRef.current?.destroy(), [])
 
@@ -214,7 +257,7 @@ function RingkasanFaskesCard({
       title="Ringkasan Faskes Secara Nasional"
       description="Ringkasan ini menampilkan proporsi fasilitas kesehatan secara nasional per jenis layanan. Gunakan daftar di samping untuk menyorot atau memfilter kategori pada chart."
     >
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(260px,320px)_minmax(0,1fr)] lg:items-center">
+      <div className={`grid grid-cols-1 gap-6 lg:grid-cols-[minmax(260px,320px)_minmax(0,1fr)] lg:items-center ${loading ? 'opacity-75' : 'opacity-100'}`}>
         <div className="relative mx-auto h-[240px] w-full max-w-[280px] sm:h-[280px] sm:max-w-[320px]">
           <canvas
             ref={canvasRef}
@@ -235,7 +278,7 @@ function RingkasanFaskesCard({
         </div>
 
         <div className="grid gap-3">
-          {FASKES_DATA.map((item, index) => {
+          {faskesData.map((item, index) => {
             const isSelected = selectedIds.includes(item.id)
             const isMuted = !isSelected
             return (
@@ -281,13 +324,19 @@ function RingkasanFaskesCard({
 
 function SebaranJenisFaskesCard({
   selectedIds,
+  faskesData,
+  loading,
 }: {
   selectedIds: FacilityFilter[]
+  faskesData: ReturnType<typeof buildFaskesData>
+  loading: boolean
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const chartRef = useRef<ChartInstance | null>(null)
-  const filteredData = getSelectedData(selectedIds)
-  const isAllActive = selectedIds.length === FASKES_DATA.length
+  const filteredData = getSelectedData(selectedIds, faskesData)
+  const dataVersion = getDataVersion(faskesData)
+  const selectedIdsVersion = selectedIds.join('|')
+  const isAllActive = selectedIds.length === FASKES_META.length
 
   const buildChart = () => {
     if (!canvasRef.current || !window.Chart) return
@@ -380,13 +429,13 @@ function SebaranJenisFaskesCard({
             beginAtZero: true,
             suggestedMax: isAllActive
               ? 300000
-              : Math.max(filteredData[0].value * 1.2, 1000),
+              : Math.max((filteredData[0]?.value ?? 0) * 1.2, 1000),
             grid: { color: 'rgba(24, 128, 132, 0.10)' },
             border: { display: false },
             ticks: {
               stepSize: isAllActive
                 ? 100000
-                : Math.max(1, Math.ceil(filteredData[0].value / 4 / 1000) * 1000),
+                : Math.max(1, Math.ceil((filteredData[0]?.value ?? 0) / 4 / 1000) * 1000),
               color: '#6e8b8a',
               font: { size: 12 },
               callback: (value: string | number) => {
@@ -408,7 +457,7 @@ function SebaranJenisFaskesCard({
       buildChart()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedIds])
+  }, [selectedIdsVersion, dataVersion])
   useEffect(() => () => chartRef.current?.destroy(), [])
 
   return (
@@ -417,7 +466,7 @@ function SebaranJenisFaskesCard({
       description="Grafik batang ini memperlihatkan perbandingan jumlah faskes pada setiap jenis layanan. Nilai pada sumbu vertikal menampilkan volume fasilitas untuk memudahkan analisis kategori tertinggi dan terendah."
     >
       <div className="rounded-[16px] border border-[#e3f1f0] bg-[linear-gradient(180deg,#fcffff_0%,#f5fbfb_100%)] p-3 sm:p-4">
-        <div className="h-[340px] sm:h-[380px]">
+        <div className={`h-[340px] sm:h-[380px] ${loading ? 'opacity-75' : 'opacity-100'}`}>
           <canvas
             ref={canvasRef}
             aria-label="Grafik Sebaran Per Jenis Faskes"
@@ -429,17 +478,29 @@ function SebaranJenisFaskesCard({
   )
 }
 
-export default function ChartCardsSection() {
+export default function ChartCardsSection({
+  rekapTotal,
+  loading = false,
+}: {
+  rekapTotal: RekapTotals
+  loading?: boolean
+}) {
+  const faskesData = buildFaskesData(rekapTotal)
   const [selectedIds, setSelectedIds] = useState<FacilityFilter[]>(
-    FASKES_DATA.map((item) => item.id)
+    FASKES_META.map((item) => item.id)
   )
 
   return (
     <section className="w-full border-t border-[#e0eeee] bg-[#f4fafa] py-6">
       <div className="w-full px-4 sm:px-5 lg:px-6">
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          <RingkasanFaskesCard selectedIds={selectedIds} onSelectionChange={setSelectedIds} />
-          <SebaranJenisFaskesCard selectedIds={selectedIds} />
+          <RingkasanFaskesCard
+            selectedIds={selectedIds}
+            onSelectionChange={setSelectedIds}
+            faskesData={faskesData}
+            loading={loading}
+          />
+          <SebaranJenisFaskesCard selectedIds={selectedIds} faskesData={faskesData} loading={loading} />
         </div>
       </div>
     </section>

@@ -5,6 +5,9 @@ Project ini adalah dashboard berbasis Next.js untuk kebutuhan pemantauan data ke
 ## Menjalankan Project
 
 ```bash
+npm install
+cp .env.example .env.local
+# isi DASHBOARD_FASKES_TOKEN di .env.local
 npm run dev
 ```
 

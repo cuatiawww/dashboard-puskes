@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import {
   Building2,
+  ChevronDown,
   ChevronUp,
   HeartPulse,
   Stethoscope,
@@ -17,7 +18,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import IndonesiaStatusMapClient from '@/components/landing/IndonesiaStatusMapClient'
-import FilterDropdownBar from '@/components/landing/FilterDropdownBar'
+import FilterDropdownBar, { type DropdownOption } from '@/components/landing/FilterDropdownBar'
 import ChartCardsSection from '@/components/landing/ChartCardsSection'
 import FacilityProvinceSection, { type FacilityKey } from '@/components/landing/FacilityProvinceSection'
 import InsightModal, { type ModalTab, type InsightData } from '@/components/landing/InsightModal'
@@ -29,13 +30,29 @@ const assets = {
 }
 
 const summaryCards = [
-  { id: 'total-rs', facility: 'rumahSakit', title: 'TOTAL RUMAH SAKIT', value: '3.123', icon: '/rumah%20sakit.svg' },
-  { id: 'total-puskesmas', facility: 'puskesmas', title: 'TOTAL PUSKESMAS', value: '5.123', icon: '/puskesmas.svg' },
-  { id: 'total-pustu', facility: 'pustu', title: 'TOTAL PUSTU', value: '1.423', icon: '/puskesmas.svg' },
-  { id: 'total-klinik', facility: 'klinik', title: 'TOTAL KLINIK', value: '2.876', icon: '/rumah%20sakit.svg' },
-  { id: 'total-posyandu', facility: 'posyandu', title: 'TOTAL POSYANDU', value: '2.123', icon: '/posyandu.svg' },
-  { id: 'total-bbkk', facility: 'bbkk', title: 'TOTAL BBKK/BKK/LKK', value: '512', icon: '/faskes.svg' },
+  { id: 'total-rs', facility: 'rumahSakit', title: 'TOTAL RUMAH SAKIT', keyName: 'total_rs', icon: '/rumah%20sakit.svg' },
+  { id: 'total-puskesmas', facility: 'puskesmas', title: 'TOTAL PUSKESMAS', keyName: 'total_puskesmas', icon: '/puskesmas.svg' },
+  { id: 'total-pustu', facility: 'pustu', title: 'TOTAL PUSTU', keyName: 'total_pustu', icon: '/puskesmas.svg' },
+  { id: 'total-klinik', facility: 'klinik', title: 'TOTAL KLINIK', keyName: 'total_klinik', icon: '/rumah%20sakit.svg' },
+  { id: 'total-posyandu', facility: 'posyandu', title: 'TOTAL POSYANDU', keyName: 'total_posyandu', icon: '/posyandu.svg' },
+  { id: 'total-bbkk', facility: 'bbkk', title: 'TOTAL BBKK/BKK/LKK', keyName: 'total_bkk', icon: '/faskes.svg' },
 ] as const
+
+type RekapTotalResponse = {
+  total_rs: string | number
+  total_puskesmas: string | number
+  total_posyandu: string | number
+  total_klinik: string | number
+  total_pustu: string | number
+  total_bkk: string | number
+} & Record<string, string | number | undefined>
+
+type ApiListItem = {
+  kode_provinsi?: string
+  nama_provinsi?: string
+  kode_kabupaten?: string
+  nama_kabupaten?: string
+}
 
 function formatWibDate(date: Date) {
   return new Intl.DateTimeFormat('id-ID', {
@@ -60,6 +77,18 @@ export default function HomePage() {
 
   const [activeQuickLink, setActiveQuickLink] = useState<QuickLinkKey>('dashboard')
   const [activeFacility, setActiveFacility] = useState<FacilityKey>('puskesmas')
+  const [selectedProvinsi, setSelectedProvinsi] = useState('')
+  const [selectedKabupaten, setSelectedKabupaten] = useState('')
+  const [provinsiOptions, setProvinsiOptions] = useState<DropdownOption[]>([
+    { value: '', label: 'Semua Provinsi' },
+  ])
+  const [kabupatenOptions, setKabupatenOptions] = useState<DropdownOption[]>([
+    { value: '', label: 'Semua Kab/Kota' },
+  ])
+  const [rekapTotal, setRekapTotal] = useState<RekapTotalResponse | null>(null)
+  const [loadingRekap, setLoadingRekap] = useState(false)
+  const [loadingKabupaten, setLoadingKabupaten] = useState(false)
+  const rekapRequestIdRef = useRef(0)
   const [aiInsight, setAiInsight] = useState<InsightData | null>(null)
   const [generatingAi, setGeneratingAi] = useState(false)
   const [downloadingInfo, setDownloadingInfo] = useState(false)
@@ -74,6 +103,155 @@ export default function HomePage() {
   const sourceDataLabel = `Data per ${wibDateLabel} - Sumber: Kemenkes RI`
   const exportDataLabel = `Data per ${wibDateLabel} - Kemenkes RI`
   const updatedAtLabel = `Diperbarui ${wibDateLabel}, ${wibTimeLabel.replace('.', ':')} WIB`
+
+  const formatNumber = (value: string | number | undefined) => {
+    const numericValue =
+      typeof value === 'number'
+        ? value
+        : Number.parseInt((value ?? '0').toString().replace(/[^\d-]/g, ''), 10)
+    if (Number.isNaN(numericValue)) return '0'
+    return numericValue.toLocaleString('id-ID')
+  }
+
+  const formatPercent = (value: number) => {
+    return `${Math.abs(value).toLocaleString('id-ID', {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    })}%`
+  }
+
+  const toNumber = (value: string | number | undefined) => {
+    if (typeof value === 'number') return value
+    const parsed = Number.parseFloat((value ?? '0').toString().replace(',', '.'))
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+
+  const getTrendForCard = (cardKeyName: string) => {
+    const data = rekapTotal
+    if (!data) return null
+
+    const base = cardKeyName.replace(/^total_/, '')
+    const directTrendCandidates = [
+      `persen_${base}`,
+      `persentase_${base}`,
+      `${cardKeyName}_persen`,
+      `${cardKeyName}_persentase`,
+      `growth_${base}`,
+      `trend_${base}`,
+    ]
+
+    for (const key of directTrendCandidates) {
+      if (data[key] !== undefined && data[key] !== null && data[key] !== '') {
+        return toNumber(data[key] as string | number)
+      }
+    }
+
+    const previousCandidates = [
+      `${cardKeyName}_prev`,
+      `${cardKeyName}_sebelumnya`,
+      `${cardKeyName}_bulan_lalu`,
+      `total_${base}_prev`,
+      `total_${base}_sebelumnya`,
+      `total_${base}_bulan_lalu`,
+    ]
+
+    for (const key of previousCandidates) {
+      if (data[key] !== undefined && data[key] !== null && data[key] !== '') {
+        const current = toNumber(data[cardKeyName])
+        const previous = toNumber(data[key] as string | number)
+        if (previous === 0) return null
+        return ((current - previous) / previous) * 100
+      }
+    }
+
+    return null
+  }
+
+  const loadRekapTotal = async (kodeProvinsi: string, kodeKabupaten: string) => {
+    const requestId = rekapRequestIdRef.current + 1
+    rekapRequestIdRef.current = requestId
+    setLoadingRekap(true)
+    try {
+      const response = await fetch('/api/dashboard-faskes/rekap-total', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kode_provinsi: kodeProvinsi,
+          kode_kabupaten: kodeKabupaten,
+        }),
+      })
+
+      if (!response.ok) return
+      const payload = (await response.json()) as { data?: RekapTotalResponse }
+      if (payload.data && requestId === rekapRequestIdRef.current) {
+        setRekapTotal(payload.data)
+      }
+    } finally {
+      if (requestId === rekapRequestIdRef.current) {
+        setLoadingRekap(false)
+      }
+    }
+  }
+
+  const loadKabupaten = async (kodeProvinsi: string) => {
+    setLoadingKabupaten(true)
+    try {
+      const response = await fetch('/api/dashboard-faskes/kabupaten', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kode_provinsi: kodeProvinsi }),
+      })
+      if (!response.ok) return
+      const payload = (await response.json()) as { data?: ApiListItem[] }
+      const nextOptions: DropdownOption[] = [
+        { value: '', label: 'Semua Kab/Kota' },
+        ...((payload.data ?? []).map((item) => ({
+          value: item.kode_kabupaten ?? '',
+          label: item.nama_kabupaten ?? '-',
+        }))),
+      ]
+      setKabupatenOptions(nextOptions)
+    } finally {
+      setLoadingKabupaten(false)
+    }
+  }
+
+  useEffect(() => {
+    void (async () => {
+      const response = await fetch('/api/dashboard-faskes/provinsi', {
+        method: 'POST',
+      })
+      if (response.ok) {
+        const payload = (await response.json()) as { data?: ApiListItem[] }
+        const nextOptions: DropdownOption[] = [
+          { value: '', label: 'Semua Provinsi' },
+          ...((payload.data ?? []).map((item) => ({
+            value: item.kode_provinsi ?? '',
+            label: item.nama_provinsi ?? '-',
+          }))),
+        ]
+        setProvinsiOptions(nextOptions)
+      }
+      await loadRekapTotal('', '')
+    })()
+  }, [])
+
+  const handleChangeProvinsi = (value: string) => {
+    setSelectedProvinsi(value)
+    setSelectedKabupaten('')
+    if (!value) {
+      setKabupatenOptions([{ value: '', label: 'Semua Kab/Kota' }])
+      void loadRekapTotal('', '')
+      return
+    }
+    void loadKabupaten(value)
+    void loadRekapTotal(value, '')
+  }
+
+  const handleChangeKabupaten = (value: string) => {
+    setSelectedKabupaten(value)
+    void loadRekapTotal(selectedProvinsi, value)
+  }
 
   const openModal = (tab: ModalTab) => {
     setModalTab(tab)
@@ -284,13 +462,32 @@ export default function HomePage() {
       {/* ── Summary Cards ────────────────────────────────────────────────────── */}
       <section className="w-full bg-[#fbffff] py-3">
         <div className="w-full px-4 sm:px-5 lg:px-6">
-          <FilterDropdownBar />
+          <FilterDropdownBar
+            selectedCakupan={selectedProvinsi}
+            selectedProvinsi={selectedKabupaten}
+            selectedKabupaten={selectedKabupaten}
+            cakupanOptions={provinsiOptions}
+            provinsiOptions={kabupatenOptions}
+            kabupatenOptions={kabupatenOptions}
+            onChangeCakupan={handleChangeProvinsi}
+            onChangeProvinsi={handleChangeKabupaten}
+            onChangeKabupaten={handleChangeKabupaten}
+            disableProvinsi={!selectedProvinsi}
+            disableKabupaten={!selectedProvinsi}
+          />
 
           <div className="mt-2.5 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             {summaryCards.map((card) => (
+              (() => {
+                const trend = getTrendForCard(card.keyName)
+                const isUp = (trend ?? 0) >= 0
+                const trendColor = isUp ? '#17b7b2' : '#e25555'
+                return (
               <article
                 key={card.id}
-                className="flex min-h-[118px] w-full items-center gap-3 border border-[#bedbda] bg-white px-4 py-3 shadow-[0_6px_18px_rgba(20,120,116,0.06)] transition-all sm:px-5 sm:py-3.5"
+                className={`flex min-h-[118px] w-full items-center gap-3 border border-[#bedbda] bg-white px-4 py-3 shadow-[0_6px_18px_rgba(20,120,116,0.06)] transition-all sm:px-5 sm:py-3.5 ${
+                  loadingRekap ? 'opacity-80' : 'opacity-100'
+                }`}
                 style={{
                   borderTopLeftRadius: '17px',
                   borderTopRightRadius: '17px',
@@ -305,20 +502,45 @@ export default function HomePage() {
                   <p className="text-[12px] font-bold leading-none text-[#4f4f4f] sm:text-[13px]">
                     {card.title}
                   </p>
-                  <p className="mt-2 text-[42px] font-bold leading-[0.92] tracking-[-0.02em] text-[#454545] sm:text-[52px]">
-                    {card.value}
-                  </p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <p
+                      className={`text-[42px] font-bold leading-[0.92] tracking-[-0.02em] text-[#454545] sm:text-[52px] ${
+                        loadingRekap ? 'animate-pulse' : ''
+                      }`}
+                    >
+                      {formatNumber(rekapTotal?.[card.keyName])}
+                    </p>
+                    {loadingRekap && <Loader2 className="h-5 w-5 animate-spin text-[#10b9b4]" />}
+                  </div>
                   <p className="mt-2.5 text-[12px] text-[#383838] sm:text-[13px]">
-                    <span className="inline-flex items-center gap-1 font-bold text-[#17b7b2]">
-                      <ChevronUp className="h-3.5 w-3.5 stroke-[2.8]" />
-                      2,1%
-                    </span>{' '}
-                    dari bulan sebelumnya
+                    {trend === null ? (
+                      <span className="text-[#6e7d7d]">Data perubahan belum tersedia</span>
+                    ) : (
+                      <>
+                        <span className="inline-flex items-center gap-1 font-bold" style={{ color: trendColor }}>
+                          {isUp ? (
+                            <ChevronUp className="h-3.5 w-3.5 stroke-[2.8]" />
+                          ) : (
+                            <ChevronDown className="h-3.5 w-3.5 stroke-[2.8]" />
+                          )}
+                          {formatPercent(trend)}
+                        </span>{' '}
+                        dari bulan sebelumnya
+                      </>
+                    )}
                   </p>
                 </div>
               </article>
+                )
+              })()
             ))}
           </div>
+          {loadingKabupaten && (
+            <div className="mt-2 inline-flex items-center gap-2 text-[12px] text-[#0f8f96]">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Memuat daftar kabupaten/kota...
+            </div>
+          )}
         </div>
       </section>
 
@@ -462,8 +684,13 @@ export default function HomePage() {
       </section>
 
       {/* ── Chart Cards ──────────────────────────────────────────────────────── */}
-      <ChartCardsSection />
-      <FacilityProvinceSection key={activeFacility} activeFacility={activeFacility} />
+      <ChartCardsSection rekapTotal={rekapTotal} loading={loadingRekap} />
+      <FacilityProvinceSection
+        key={activeFacility}
+        activeFacility={activeFacility}
+        selectedProvinsi={selectedProvinsi}
+        selectedKabupaten={selectedKabupaten}
+      />
 
       {/* ── Insight Modal ────────────────────────────────────────────────────── */}
       <InsightModal
