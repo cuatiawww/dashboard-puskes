@@ -448,10 +448,10 @@ export default function HomePage() {
               borderBottomLeftRadius: '17px',
             }}
           >
-            <h3 className="text-[22px] font-bold leading-tight text-[#2f2f2f] sm:text-[30px]">
+            <h3 className="text-[18px] font-bold uppercase leading-tight text-[#2f2f2f] sm:text-[20px]">
               KEPADATAN / JUMLAH TOTAL FASKES
             </h3>
-            <p className="mt-1 text-[14px] leading-relaxed text-[#4b4b4b] sm:text-[16px]">
+            <p className="mt-2 text-[15px] leading-relaxed text-[#4b4b4b] sm:text-[16px]">
               Pemetaan ini menyajikan gambaran komprehensif mengenai distribusi geografis dan klasifikasi status Fasilitas Kesehatan di seluruh wilayah Indonesia.
             </p>
             <div className="mt-4 h-[300px] sm:h-[350px] md:h-[420px] xl:h-[470px]">

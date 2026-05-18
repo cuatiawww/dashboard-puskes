@@ -89,7 +89,7 @@ function SectionCard({
             {title}
           </h3>
           {description ? (
-            <p className="mt-2 text-[14px] leading-relaxed text-[#5f7a79]">
+            <p className="mt-2 text-[15px] leading-relaxed text-[#5f7a79] sm:text-[16px]">
               {description}
             </p>
           ) : null}

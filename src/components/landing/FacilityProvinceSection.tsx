@@ -199,10 +199,10 @@ export default function FacilityProvinceSection({
           {/* Header + legend */}
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <h3 className="text-[20px] font-bold uppercase leading-tight text-[#2f2f2f] sm:text-[24px]">
+              <h3 className="text-[18px] font-bold uppercase leading-tight text-[#2f2f2f] sm:text-[20px]">
                 Sebaran Fasilitas Kesehatan per Provinsi
               </h3>
-              <p className="mt-1 text-[13px] leading-relaxed text-[#4b4b4b] sm:text-[14px]">
+              <p className="mt-2 text-[15px] leading-relaxed text-[#4b4b4b] sm:text-[16px]">
                Menampilkan pemetaan distribusi dan jumlah fasilitas kesehatan yang tersebar di setiap provinsi.
               </p>
 
