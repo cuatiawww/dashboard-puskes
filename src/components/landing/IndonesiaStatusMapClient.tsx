@@ -14,6 +14,11 @@ import type Feature from 'ol/Feature'
 import 'ol/ol.css'
 
 type DensityLevel = 'Rendah' | 'Sedang' | 'Tinggi' | 'Sangat Tinggi'
+type DensityBreaks = {
+  q1: number
+  q2: number
+  q3: number
+}
 
 // Sequential: terang (sedikit faskes) → gelap (banyak faskes)
 const densityColors: Record<DensityLevel, string> = {
@@ -132,11 +137,41 @@ function extractPetaRows(payloadData: unknown): PetaSebaranItem[] {
   return walk(payloadData)
 }
 
-function levelFromDensity(value: number): DensityLevel {
-  if (value < 35) return 'Rendah'
-  if (value < 55) return 'Sedang'
-  if (value < 75) return 'Tinggi'
+function percentile(sortedValues: number[], p: number) {
+  if (sortedValues.length === 0) return 0
+  const idx = (sortedValues.length - 1) * p
+  const low = Math.floor(idx)
+  const high = Math.ceil(idx)
+  if (low === high) return sortedValues[low]
+  const weight = idx - low
+  return sortedValues[low] * (1 - weight) + sortedValues[high] * weight
+}
+
+function createDensityBreaks(values: number[]): DensityBreaks {
+  const valid = values.filter((v) => Number.isFinite(v) && v >= 0).sort((a, b) => a - b)
+  if (valid.length === 0) return { q1: 35, q2: 55, q3: 75 }
+
+  const min = valid[0]
+  const max = valid[valid.length - 1]
+  if (min === max) {
+    return { q1: min, q2: min, q3: min }
+  }
+
+  const q1 = percentile(valid, 0.25)
+  const q2 = percentile(valid, 0.5)
+  const q3 = percentile(valid, 0.75)
+  return { q1, q2, q3 }
+}
+
+function levelFromDensity(value: number, breaks: DensityBreaks): DensityLevel {
+  if (value <= breaks.q1) return 'Rendah'
+  if (value <= breaks.q2) return 'Sedang'
+  if (value <= breaks.q3) return 'Tinggi'
   return 'Sangat Tinggi'
+}
+
+function formatRange(min: number, max: number) {
+  return `${min.toFixed(2)} - ${max.toFixed(2)}`
 }
 
 export default function IndonesiaStatusMapClient({
@@ -154,8 +189,16 @@ export default function IndonesiaStatusMapClient({
   const selectedProvinceNameRef = useRef<string>('')
   const densityByProvinceNameRef = useRef<Record<string, number>>({})
   const densityByProvinceCodeRef = useRef<Record<string, number>>({})
+  const densityBreaksRef = useRef<DensityBreaks>({ q1: 35, q2: 55, q3: 75 })
   const metricsByProvinceNameRef = useRef<Record<string, PetaMetrics>>({})
   const metricsByProvinceCodeRef = useRef<Record<string, PetaMetrics>>({})
+  const [showFormulaModal, setShowFormulaModal] = useState(false)
+  const [legendRanges, setLegendRanges] = useState<Record<DensityLevel, string>>({
+    Rendah: '< 35',
+    Sedang: '35 - 55',
+    Tinggi: '55 - 75',
+    'Sangat Tinggi': '> 75',
+  })
   const [activeFilter, setActiveFilter] = useState<DensityLevel | null>(null)
   const [selectedProvince, setSelectedProvince] = useState<{
     name: string
@@ -191,9 +234,11 @@ export default function IndonesiaStatusMapClient({
       const byCode: Record<string, number> = {}
       const metricsByName: Record<string, PetaMetrics> = {}
       const metricsByCode: Record<string, PetaMetrics> = {}
+      const densityValues: number[] = []
       for (const item of rows) {
         const source = item.properties ?? item
         const density = calculateDensityValue(item)
+        densityValues.push(density)
         const totalFaskes = toNumber(source.total_faskes) || calculateTotalFaskes(source)
         const population = toNumber(
           source.jumlah_penduduk ?? source.jml_penduduk ?? source.penduduk ?? source.populasi,
@@ -211,6 +256,14 @@ export default function IndonesiaStatusMapClient({
           metricsByCode[code] = { densityValue: density, totalFaskes, population }
         }
       }
+      const nextBreaks = createDensityBreaks(densityValues)
+      densityBreaksRef.current = nextBreaks
+      setLegendRanges({
+        Rendah: `<= ${nextBreaks.q1.toFixed(2)}`,
+        Sedang: formatRange(nextBreaks.q1, nextBreaks.q2),
+        Tinggi: formatRange(nextBreaks.q2, nextBreaks.q3),
+        'Sangat Tinggi': `> ${nextBreaks.q3.toFixed(2)}`,
+      })
       densityByProvinceNameRef.current = byName
       densityByProvinceCodeRef.current = byCode
       metricsByProvinceNameRef.current = metricsByName
@@ -236,7 +289,7 @@ export default function IndonesiaStatusMapClient({
           densityByProvinceNameRef.current[normalizeProvinceName(name)]
         const densityFromCode = densityByProvinceCodeRef.current[code]
         const densityValue = densityFromCode ?? densityFromName ?? 0
-        const densityLevel = levelFromDensity(densityValue)
+        const densityLevel = levelFromDensity(densityValue, densityBreaksRef.current)
         const selectedName = selectedProvinceNameRef.current
         const isSelected =
           selectedName !== '' && selectedName === name
@@ -297,7 +350,7 @@ export default function IndonesiaStatusMapClient({
           totalFaskes: 0,
           population: 0,
         }
-      const densityLevel = levelFromDensity(densityValue)
+      const densityLevel = levelFromDensity(densityValue, densityBreaksRef.current)
       const kode = code || '-'
       setSelectedProvince({
         name: propinsiName,
@@ -343,7 +396,7 @@ export default function IndonesiaStatusMapClient({
             densityByProvinceCodeRef.current[code] ??
             densityByProvinceNameRef.current[normalizeProvinceName(name)] ??
             0
-          return levelFromDensity(densityValue) === activeFilter
+          return levelFromDensity(densityValue, densityBreaksRef.current) === activeFilter
         },
       )
     if (!firstMatch || !mapInstanceRef.current) return
@@ -390,13 +443,7 @@ export default function IndonesiaStatusMapClient({
           {densityOrder.map((item) => {
             const isSelected = activeFilter === item
             const rangeLabel =
-              item === 'Rendah'
-                ? '< 35'
-                : item === 'Sedang'
-                ? '35 - 54'
-                : item === 'Tinggi'
-                ? '55 - 74'
-                : '>= 75'
+              legendRanges[item]
             const hintLabel =
               item === 'Rendah'
                 ? 'Jumlah faskes sedikit'
@@ -452,6 +499,13 @@ export default function IndonesiaStatusMapClient({
             <p className="text-[12px] font-bold uppercase tracking-wide text-[#2a4040]">
               Provinsi Dipilih
             </p>
+            <button
+              type="button"
+              onClick={() => setShowFormulaModal(true)}
+              className="mt-2 rounded-md border border-[#b8dcdb] bg-white px-2.5 py-1.5 text-[11px] font-semibold text-[#0f8f96] transition-colors hover:bg-[#eaf8f8]"
+            >
+              Lihat Rumus
+            </button>
             <p className="mt-1 text-[20px] font-bold leading-tight text-[#223333]">
               {selectedProvince.name}
             </p>
@@ -507,6 +561,47 @@ export default function IndonesiaStatusMapClient({
                 <span>Rendah</span>
                 <span>Sangat Tinggi</span>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showFormulaModal && selectedProvince && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/25 p-4">
+          <div className="w-full max-w-lg rounded-2xl border border-[#bfe3e2] bg-white p-5 shadow-xl">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[12px] font-bold uppercase tracking-wide text-[#2a4040]">Keterangan Rumus</p>
+                <p className="mt-1 text-[18px] font-bold text-[#223333]">{selectedProvince.name}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowFormulaModal(false)}
+                className="rounded-md border border-[#cfe8e7] px-2 py-1 text-[12px] text-[#4a6060] hover:bg-[#f2f9f9]"
+              >
+                Tutup
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-3 text-[13px] text-[#3f5454]">
+              <p>
+                Rasio dihitung dengan rumus: <strong>(Total Faskes / Jumlah Penduduk) × 100.000</strong>
+              </p>
+              <p>
+                Substitusi data: <strong>({selectedProvince.totalFaskes.toLocaleString('id-ID')} / {selectedProvince.population.toLocaleString('id-ID')}) × 100.000</strong>
+              </p>
+              <p>
+                Hasil: <strong>{selectedProvince.densityValue.toFixed(2)}</strong>
+              </p>
+              <p>
+                Kategori warna memakai batas dinamis dari distribusi data nasional saat ini (quartile), bukan batas tetap.
+              </p>
+              <ul className="list-disc pl-5 text-[12px] text-[#5a7070]">
+                <li>Rendah: {legendRanges.Rendah}</li>
+                <li>Sedang: {legendRanges.Sedang}</li>
+                <li>Tinggi: {legendRanges.Tinggi}</li>
+                <li>Sangat Tinggi: {legendRanges['Sangat Tinggi']}</li>
+              </ul>
             </div>
           </div>
         </div>
