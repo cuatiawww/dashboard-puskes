@@ -20,12 +20,19 @@ type DensityBreaks = {
   q3: number
 }
 
-// Sequential: terang (sedikit faskes) → gelap (banyak faskes)
+// Fixed thresholds: <50 (rendah), 50-99 (sedang), 100-149 (tinggi), >=150 (sangat tinggi)
+const MIN_DENSITY_BREAKS: DensityBreaks = {
+  q1: 50,
+  q2: 100,
+  q3: 150,
+}
+
+// Sequential: red (rendah/sedikit) → green (sangat tinggi/banyak faskes)
 const densityColors: Record<DensityLevel, string> = {
-  Rendah: '#ffffb2',
-  Sedang: '#fecc5c',
-  Tinggi: '#fd8d3c',
-  'Sangat Tinggi': '#bd0026',
+  Rendah: '#d73027',
+  Sedang: '#fee08b',
+  Tinggi: '#91cf60',
+  'Sangat Tinggi': '#1a9850',
 }
 
 const densityOrder: DensityLevel[] = ['Rendah', 'Sedang', 'Tinggi', 'Sangat Tinggi']
@@ -149,24 +156,32 @@ function percentile(sortedValues: number[], p: number) {
 
 function createDensityBreaks(values: number[]): DensityBreaks {
   const valid = values.filter((v) => Number.isFinite(v) && v >= 0).sort((a, b) => a - b)
-  if (valid.length === 0) return { q1: 35, q2: 55, q3: 75 }
+  if (valid.length === 0) return MIN_DENSITY_BREAKS
 
   const min = valid[0]
   const max = valid[valid.length - 1]
   if (min === max) {
-    return { q1: min, q2: min, q3: min }
+    return {
+      q1: Math.max(min, MIN_DENSITY_BREAKS.q1),
+      q2: Math.max(min, MIN_DENSITY_BREAKS.q2),
+      q3: Math.max(min, MIN_DENSITY_BREAKS.q3),
+    }
   }
 
   const q1 = percentile(valid, 0.25)
   const q2 = percentile(valid, 0.5)
   const q3 = percentile(valid, 0.75)
-  return { q1, q2, q3 }
+  return {
+    q1: Math.max(q1, MIN_DENSITY_BREAKS.q1),
+    q2: Math.max(q2, MIN_DENSITY_BREAKS.q2),
+    q3: Math.max(q3, MIN_DENSITY_BREAKS.q3),
+  }
 }
 
 function levelFromDensity(value: number, breaks: DensityBreaks): DensityLevel {
-  if (value <= breaks.q1) return 'Rendah'
-  if (value <= breaks.q2) return 'Sedang'
-  if (value <= breaks.q3) return 'Tinggi'
+  if (value < breaks.q1) return 'Rendah'
+  if (value < breaks.q2) return 'Sedang'
+  if (value < breaks.q3) return 'Tinggi'
   return 'Sangat Tinggi'
 }
 
@@ -189,7 +204,7 @@ export default function IndonesiaStatusMapClient({
   const selectedProvinceNameRef = useRef<string>('')
   const densityByProvinceNameRef = useRef<Record<string, number>>({})
   const densityByProvinceCodeRef = useRef<Record<string, number>>({})
-  const densityBreaksRef = useRef<DensityBreaks>({ q1: 35, q2: 55, q3: 75 })
+  const densityBreaksRef = useRef<DensityBreaks>(MIN_DENSITY_BREAKS)
   const metricsByProvinceNameRef = useRef<Record<string, PetaMetrics>>({})
   const metricsByProvinceCodeRef = useRef<Record<string, PetaMetrics>>({})
   const [showFormulaModal, setShowFormulaModal] = useState(false)
