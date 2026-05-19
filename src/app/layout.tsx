@@ -1,14 +1,6 @@
 import type { Metadata } from "next";
-import { Manrope } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/layout/AppShell";
-
-const manrope = Manrope({
-  weight: ['300', '400', '500', '600', '700', '800'],
-  subsets: ["latin"],
-  variable: "--font-manrope",
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: "Dashboard Puskes - Kemenkes RI",
@@ -22,7 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id">
-      <body className={`${manrope.variable} font-manrope antialiased`}>
+      <body className="font-manrope antialiased">
         <AppShell>
           {children}
         </AppShell>

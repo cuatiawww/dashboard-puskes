@@ -469,8 +469,8 @@ export default function IndonesiaStatusMapClient({
               Rasio faskes:{' '}
               <span className="font-semibold text-[#223333]">
                 {selectedProvince.densityValue > 0
-                  ? selectedProvince.densityValue.toFixed(2)
-                  : 'Data rasio tidak tersedia'}
+                  ? `${selectedProvince.totalFaskes.toLocaleString('id-ID')} / ${selectedProvince.population.toLocaleString('id-ID')} × 100.000 = ${selectedProvince.densityValue.toFixed(2)}`
+                  : 'Data rasio tidak tersedia'}    
               </span>
             </p>
             <p className="mt-1 text-[13px] text-[#4a6060]">

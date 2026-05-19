@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect, type ComponentType } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { Building, Building2, HeartPulse, HousePlus, ShieldPlus, Stethoscope } from 'lucide-react'
 
 export type FacilityKey = 'rumahSakit' | 'puskesmas' | 'pustu' | 'klinik' | 'posyandu' | 'bbkk'
 type FacilityFocus = FacilityKey | 'all'
@@ -43,15 +42,6 @@ const FACILITY_META: Record<FacilityKey, { label: string; color: string }> = {
   posyandu: { label: 'Posyandu', color: '#5c9bd5' },
   bbkk: { label: 'BBKK/BKK/LKK', color: '#f2a93b' },
 }
-const FACILITY_ICON: Record<FacilityKey, ComponentType<{ className?: string }>> = {
-  rumahSakit: Building2,
-  puskesmas: Stethoscope,
-  pustu: HousePlus,
-  klinik: Building,
-  posyandu: HeartPulse,
-  bbkk: ShieldPlus,
-}
-
 type TooltipState = {
   visible: boolean
   x: number
@@ -71,9 +61,7 @@ export default function FacilityProvinceSection({
   selectedProvinsi?: string
   selectedKabupaten?: string
 }) {
-  const [activeKeys, setActiveKeys] = useState<Set<FacilityKey>>(() =>
-    activeFacility === 'all' ? new Set(FACILITY_KEYS) : new Set([activeFacility])
-  )
+  void activeFacility
   const [tooltip, setTooltip] = useState<TooltipState>({
     visible: false, x: 0, y: 0, province: '', key: 'rumahSakit', value: 0, pct: 0,
   })
@@ -146,27 +134,8 @@ export default function FacilityProvinceSection({
     })()
   }, [selectedProvinsi, selectedKabupaten])
 
-  function toggleKey(key: FacilityKey) {
-    setActiveKeys(prev => {
-      if (prev.size === FACILITY_KEYS.length) return new Set([key])
-      if (prev.has(key) && prev.size === 1) return new Set(FACILITY_KEYS)
-      const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      if (next.size === 0) return new Set(FACILITY_KEYS)
-      return next
-    })
-  }
-
-  const allActive = activeKeys.size === FACILITY_KEYS.length
-
   // Max total among all rows for currently active keys — determines longest bar
-  const maxVisTotal = Math.max(
-    1,
-    ...rows.map(row =>
-      FACILITY_KEYS.filter(k => activeKeys.has(k)).reduce((s, k) => s + row[k], 0)
-    )
-  )
+  const maxVisTotal = Math.max(1, ...rows.map(row => FACILITY_KEYS.reduce((s, k) => s + row[k], 0)))
 
   return (
     <section className="w-full bg-[#f4f7fb] pb-6">
@@ -225,7 +194,8 @@ export default function FacilityProvinceSection({
                 {FACILITY_KEYS.map(k => {
                   const val = panel.province![k]
                   const total = FACILITY_KEYS.reduce((s, kk) => s + panel.province![kk], 0)
-                  const pct = Math.round((val / total) * 100)
+                  if (val <= 0) return null
+                  const pct = total > 0 ? Math.round((val / total) * 100) : 0
                   return (
                     <div key={k}>
                       <div className="mb-1 flex items-center justify-between text-[13px]">
@@ -277,43 +247,15 @@ export default function FacilityProvinceSection({
 
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 lg:pt-1">
-              {FACILITY_KEYS.map(k => {
-                const isActive = activeKeys.has(k)
-                const isDimmed = !allActive && !isActive
-                return (
-                  <button
-                    key={k}
-                    onClick={() => toggleKey(k)}
-                    className="flex cursor-pointer items-center gap-2 rounded-full border px-3.5 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] transition-all duration-200"
-                    style={{
-                      borderColor: isActive || allActive ? FACILITY_META[k].color : '#d7eaea',
-                      backgroundColor: isActive && !allActive ? `${FACILITY_META[k].color}18` : '#ffffff',
-                      color: isActive && !allActive ? '#2e4444' : '#4a6060',
-                      opacity: isDimmed ? 0.4 : 1,
-                    }}
-                  >
-                    <span
-                      className="flex h-5 w-5 items-center justify-center rounded-full"
-                      style={{ backgroundColor: `${FACILITY_META[k].color}22`, color: FACILITY_META[k].color }}
-                    >
-                      {(() => {
-                        const Icon = FACILITY_ICON[k]
-                        return <Icon className="h-3 w-3" />
-                      })()}
-                    </span>
-                    {FACILITY_META[k].label.toUpperCase()}
-                  </button>
-                )
-              })}
-            </div>
+            <div className="hidden lg:block" />
           </div>
 
           {/* Chart rows */}
           <div className="mt-6 space-y-3">
             {rows.map(row => {
-              const visKeys = FACILITY_KEYS.filter(k => activeKeys.has(k))
+              const visKeys = FACILITY_KEYS.filter(k => row[k] > 0)
               const visTotal = visKeys.reduce((s, k) => s + row[k], 0)
+              if (visTotal <= 0) return null
               // Bar width is proportional to the row with the highest total
               const barWidthPct = maxVisTotal > 0 ? (visTotal / maxVisTotal) * 100 : 0
 

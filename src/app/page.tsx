@@ -77,8 +77,14 @@ export default function HomePage() {
 
   const [activeQuickLink, setActiveQuickLink] = useState<QuickLinkKey>('dashboard')
   const [activeFacility, setActiveFacility] = useState<FacilityKey>('puskesmas')
+  const [selectedCakupan, setSelectedCakupan] = useState('nasional')
   const [selectedProvinsi, setSelectedProvinsi] = useState('')
   const [selectedKabupaten, setSelectedKabupaten] = useState('')
+  const cakupanOptions: DropdownOption[] = [
+    { value: 'nasional', label: 'Nasional' },
+    { value: 'provinsi', label: 'Provinsi' },
+    { value: 'kabupaten', label: 'Kabupaten/Kota' },
+  ]
   const [provinsiOptions, setProvinsiOptions] = useState<DropdownOption[]>([
     { value: '', label: 'Semua Provinsi' },
   ])
@@ -251,6 +257,27 @@ export default function HomePage() {
   const handleChangeKabupaten = (value: string) => {
     setSelectedKabupaten(value)
     void loadRekapTotal(selectedProvinsi, value)
+  }
+
+  const handleChangeCakupan = (value: string) => {
+    setSelectedCakupan(value)
+
+    if (value === 'nasional') {
+      setSelectedProvinsi('')
+      setSelectedKabupaten('')
+      setKabupatenOptions([{ value: '', label: 'Semua Kab/Kota' }])
+      void loadRekapTotal('', '')
+      return
+    }
+
+    if (value === 'provinsi') {
+      setSelectedKabupaten('')
+      setKabupatenOptions([{ value: '', label: 'Semua Kab/Kota' }])
+      void loadRekapTotal(selectedProvinsi, '')
+      return
+    }
+
+    void loadRekapTotal(selectedProvinsi, selectedKabupaten)
   }
 
   const openModal = (tab: ModalTab) => {
@@ -463,17 +490,17 @@ export default function HomePage() {
       <section className="w-full bg-[#fbffff] py-3">
         <div className="w-full px-4 sm:px-5 lg:px-6">
           <FilterDropdownBar
-            selectedCakupan={selectedProvinsi}
-            selectedProvinsi={selectedKabupaten}
+            selectedCakupan={selectedCakupan}
+            selectedProvinsi={selectedProvinsi}
             selectedKabupaten={selectedKabupaten}
-            cakupanOptions={provinsiOptions}
-            provinsiOptions={kabupatenOptions}
+            cakupanOptions={cakupanOptions}
+            provinsiOptions={provinsiOptions}
             kabupatenOptions={kabupatenOptions}
-            onChangeCakupan={handleChangeProvinsi}
-            onChangeProvinsi={handleChangeKabupaten}
+            onChangeCakupan={handleChangeCakupan}
+            onChangeProvinsi={handleChangeProvinsi}
             onChangeKabupaten={handleChangeKabupaten}
-            disableProvinsi={!selectedProvinsi}
-            disableKabupaten={!selectedProvinsi}
+            disableProvinsi={selectedCakupan === 'nasional'}
+            disableKabupaten={selectedCakupan !== 'kabupaten' || !selectedProvinsi}
           />
 
           <div className="mt-2.5 grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
